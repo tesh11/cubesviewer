@@ -163,10 +163,11 @@ function cubesviewerViewCubeDynamicChart() {
 			return;
 		} 
 		
-		// Build params and include xaxis if present
-		var params = view.cubesviewer.views.cube.buildQueryParams(view, view.params.xaxis != null ? true : false, false);
+		// Build params (do not include xaxis)
+		var params = this.cubesviewer.views.cube.buildQueryParams(view, false, false);
 		
-		$('#' + view.id).find('.cv-view-viewdata').empty().append('<h3>Chart</h3><img src="' + view.cubesviewer.options.ajaxLoaderUrl + '" title="Loading..." /> Loading');
+		$('#' + view.id).find('.cv-view-viewdata').empty().append('<h3>Dynamic Chart</h3><img src="' + view.cubesviewer.options.ajaxLoaderUrl + '" title="Loading..." /> Loading');
+		
 		$.get(view.cubesviewer.options.cubesUrl + "/cube/" + view.cube.name + "/aggregate", params, 
 				view.cubesviewer.views.cube.dynamicchart._loadDataCallback(view), "json");
 		
@@ -192,296 +193,26 @@ function cubesviewerViewCubeDynamicChart() {
 		
 		if (data.cells.length == 0) {
 			$(view.container).find('.cv-view-viewdata').empty().append(
-				'<h3>Series Chart</h3>' +
-				'<div>Cannot present chart as no rows are returned by the current filtering, horizontal dimension, and drilldown combination.</div>'
+				'<h3>Dynamic Chart</h3>' +
+				'<div>Cannot present chart as no data is returned by the current filtering and drilldown combination.</div>'
 			);
 			return;
 		}
 		
 		$(view.container).find('.cv-view-viewdata').css("width", "95%");
 		$(view.container).find('.cv-view-viewdata').append(
-			'<h3>Series Chart</h3>' +
-			'<div id="seriesChart-' + view.id + '" style="height: 380px; "></div>'
+			'<h3>Dynamic Chart</h3>' +
+			'<div id="dynamicChart-' + view.id + '" style="height: 580px; "></div>'
 		);
 		
-		var colNames = [];
-		var colModel = [];	
-		var dataRows = [];
-		var dataTotals = [];
-		
 		// Process cells
+		/*
 		view.cubesviewer.views.cube.explore._sortData (view, data.cells, view.params.xaxis != null ? true : false);
 		view.cubesviewer.views.cube.series._addRows (view, dataRows, dataTotals, colNames, colModel, data);
-		
-		if (view.params.charttype == "bars-vertical") {
-			view.cubesviewer.views.cube.chart.drawChartBarsVertical(view, colNames, dataRows, dataTotals);
-		} else if (view.params.charttype == "bars-vertical-stacked") {
-			view.cubesviewer.views.cube.chart.drawChartBarsVertical(view, colNames, dataRows, dataTotals);
-		} else if (view.params.charttype == "lines") {
-			view.cubesviewer.views.cube.chart.drawChartLines(view, colNames, dataRows, dataTotals);
-		} else if (view.params.charttype == "pie") {
-			view.cubesviewer.views.cube.chart.drawChartPie(view, colNames, dataRows, dataTotals);
-		} else if (view.params.charttype == "lines-stacked") {
-			view.cubesviewer.views.cube.chart.drawChartLines(view, colNames, dataRows, dataTotals);
-		} else if (view.params.charttype == "radar") {
-			view.cubesviewer.views.cube.chart.drawChartRadar(view, colNames, dataRows, dataTotals);
-		}
-		
-	    if (view.doExport) {
-	    	view.doExport = false;
-	    	view.flotrDraw.download.saveImage("png");
-	    }
-		
-		// Generic effects
-	    $('.flotr-legend').hover(function() {
-	    	$(this).stop().animate ({opacity: 0.10}, 1000);
-	    	$('.flotr-legend-bg').stop().animate ({opacity: 0.10}, 1000);
-	    }, function() {
-	    	$(this).stop().animate ({opacity: 0.75}, 1000);
-	    	$('.flotr-legend-bg').stop().animate ({opacity: 0.75}, 1000);
-	    });
+		*/
 	    
 	};
 
-	/**
-	 * Draws a vertical bars chart.
-	 */
-	this.drawChartBarsVertical = function (view, colNames, dataRows, dataTotals) {
-		
-		var container = $('#seriesChart-' + view.id).get(0);
-		
-	    var d = [];
-
-	    numRows = dataRows.length;
-	    $(dataRows).each(function(idx, e) {
-	    	serie = [];
-	    	for (i = 1; i < colNames.length; i++) {
-	    		var value = e[colNames[i]];
-	    		if (value != undefined) {
-	    			serie.push( [ (view.params.charttype == "bars-vertical-stacked") ? (i * 10) : (i*10 + ((idx / numRows) * 9)), value] );
-	    		}
-	    	}
-	    	d.push({ data: serie, label: e["key"] != "" ? e["key"] : "UNDEF" });
-	    });
-	    d.sort(function(a,b) { return a.label < b.label ? -1 : (a.label > b.label ? +1 : 0) });
-	    
-	    xticks = [];
-	    for (i = 1; i < colNames.length; i++) {
-    		xticks.push([ i * 10, colNames[i] ]); 
-	    }
-	    
-	    view.flotrDraw = Flotr.draw(container, d, {
-	    	HtmlText: !view.doExport,
-	    	shadowSize: 2,
-	        bars: {
-	            show: true,
-	            horizontal: false,
-	            shadowSize: 0,
-	            barWidth: (view.params.charttype == "bars-vertical-stacked") ? 9 : (9 / numRows),
-	            stacked: (view.params.charttype == "bars-vertical-stacked")
-	        },
-	        mouse: {
-	            track: true,
-	            relative: true
-	        },
-	        yaxis: {
-	            //min: 0,
-	            autoscaleMargin: 1
-	        },
-	        legend: {
-	            position: "nw",
-	            backgroundColor: "#D2E8FF"
-	        },
-	        grid: {
-	            verticalLines: false,
-	            horizontalLines: true
-	        },
-	        xaxis: {
-	            ticks: xticks
-	        }
-
-	        
-	    });
-	    
-	}
-	
-	/**
-	 * Draws a vertical bars chart.
-	 */
-	this.drawChartLines = function (view, colNames, dataRows, dataTotals) {
-		
-		var container = $('#seriesChart-' + view.id).get(0);
-		
-	    var d = [];
-
-	    // TODO: Check there's only one value column
-	    
-	    numRows = dataRows.length;
-	    $(dataRows).each(function(idx, e) {
-	    	serie = [];
-	    	for (i = 1; i < colNames.length; i++) {
-	    		var value = e[colNames[i]];
-	    		if (value != undefined) {
-	    			serie.push( [i*10, value] );
-	    		} else {
-	    			serie.push( [i*10, 0] );
-	    		}
-	    	}
-	    	d.push({ data: serie, label: e["key"] != "" ? e["key"] : "UNDEF" });
-	    	//d.push({ data: serie, label: e["key"], lines: { /*fill: (view.params.charttype == "lines-stacked")*/ } });
-	    });
-	    d.sort(function(a,b) { return a.label < b.label ? -1 : (a.label > b.label ? +1 : 0) });
-	    
-	    xticks = [];
-	    for (i = 1; i < colNames.length; i++) {
-    		xticks.push([ i * 10, colNames[i] ]); 
-	    }
-	    
-	    view.flotrDraw = Flotr.draw(container, d, {
-	    	HtmlText: ! view.doExport,
-	    	shadowSize: 0,
-	        yaxis: {
-	        	autoscaleMargin: 1
-	        },
-	        lines: {
-	        	lineWidth: 1, 
-	        	shadow: false,
-	        	stacked: (view.params.charttype == "lines-stacked")
-	        },
-	        mouse: {
-	            track: true,
-	            relative: true
-	        },
-	        legend: {
-	            position: "nw",
-	            backgroundColor: "#D2E8FF"
-	        },
-	        xaxis: {
-	            ticks: xticks
-	        }
-	    });
-	    
-	};	
-
-	/**
-	 * Draws a vertical bars chart.
-	 */
-	this.drawChartPie = function (view, colNames, dataRows, dataTotals) {
-		
-		var container = $('#seriesChart-' + view.id).get(0);
-		
-	    var d = [];
-
-		// Check if we can produce a pie
-		if (colNames.length > 2) {
-			$('#' + view.id).find('.cv-view-viewdata').empty();
-			$('#' + view.id).find('.cv-view-viewdata').append('<h3>Series Chart</h3><div><i>Cannot present a Pie Chart when more than one column is present.</i></div>');
-			return;
-		} 
-	    
-	    numRows = dataRows.length;
-	    $(dataRows).each(function(idx, e) {
-	    	serie = [];
-	    	for (i = 1; i < colNames.length; i++) {
-	    		var value = e[colNames[i]];
-	    		if (value != undefined) {
-	    			serie.push( [0, value] );
-	    		}
-	    	}
-	    	d.push({ data: serie, label: e["key"] != "" ? e["key"] : "UNDEF" });
-	    });
-	    d.sort(function(a,b) { return a.label < b.label ? -1 : (a.label > b.label ? +1 : 0) });
-	    
-	    xticks = [];
-	    for (i = 1; i < colNames.length; i++) {
-    		xticks.push([ i - 1, colNames[i] ]); 
-	    }
-	    
-	    view.flotrDraw = Flotr.draw(container, d, {
-	    	HtmlText: ! view.doExport,
-	        mouse: {
-	            track: true,
-	            relative: true
-	        },
-	        grid: {
-	            verticalLines: false,
-	            horizontalLines: false
-	        },
-	        pie: {
-	            show: true,
-	            explode: 6
-	        },		        
-	        legend: {
-	            position: "nw",
-	            backgroundColor: "#D2E8FF"
-	        }
-	    });
-	    
-	};	
-	
-	/**
-	 * Draws a vertical bars chart.
-	 */
-	this.drawChartRadar = function (view, colNames, dataRows, dataTotals) {
-		
-		var container = $('#seriesChart-' + view.id).get(0);
-
-		// Check if we can produce a pie
-		if (colNames.length < 4) {
-			$('#' + view.id).find('.cv-view-viewdata').empty();
-			$('#' + view.id).find('.cv-view-viewdata').append('<h3>Series Chart</h3><div><i>Cannot present a Radar Chart when less than 3 data columns are present.</i></div>');
-			return;
-		}
-		
-	    var d = [];
-
-	    numRows = dataRows.length;
-	    $(dataRows).each(function(idx, e) {
-	    	serie = [];
-	    	for (i = 1; i < colNames.length; i++) {
-	    		var value = e[colNames[i]];
-	    		if (value != undefined) {
-	    			serie.push( [i-1, value] );
-	    		} else {
-	    			serie.push( [i-1, 0] );
-	    		}
-	    	}
-	    	d.push({ data: serie, label: e["key"] != "" ? e["key"] : "UNDEF" });
-	    });
-	    d.sort(function(a,b) { return a.label < b.label ? -1 : (a.label > b.label ? +1 : 0) });
-	    
-	    xticks = [];
-	    for (i = 1; i < colNames.length; i++) {
-    		xticks.push([ i - 1, colNames[i] ]); 
-	    }
-	    
-	    view.flotrDraw = Flotr.draw(container, d, {
-	    	HtmlText: ! view.doExport,
-	    	shadowSize: 2,
-	        radar: {
-	            show: true
-	        },
-	        mouse: {
-	            track: true,
-	            relative: true
-	        },
-	        grid: {
-	            circular: true,
-	            minorHorizontalLines: true
-	        },
-	        legend: {
-	            position: "se",
-	            backgroundColor: "#D2E8FF"
-	        },
-	        xaxis: {
-	            ticks: xticks
-	        },
-	        yaxis: {
-	        }	        
-	    });
-	    
-	};		
-	
 };
 
 
