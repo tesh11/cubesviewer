@@ -135,7 +135,7 @@ function cubesviewerViewCubeSeries() {
 		
 		
 		menu.append(
-		  '<li><a href="#"><span class="ui-icon ui-icon-arrowthick-1-s"></span>Horizontal Dimension</a><ul style="width: 180px;">' +
+		  '<li class="cv-view-series-horizontal-menu"><a href="#"><span class="ui-icon ui-icon-arrowthick-1-s"></span>Horizontal Dimension</a><ul style="width: 180px;">' +
 		  		drillElements +
 		  		'<div></div>' +
 		  		'<li><a href="#" class="cv-view-series-setxaxis" data-dimension="">None</a></li>' +
@@ -234,7 +234,7 @@ function cubesviewerViewCubeSeries() {
 		if (view.params.xaxis != null) {
 			cubesviewer.views.cube.explore.drawInfoPiece(
 				$(view.container).find('.cv-view-viewinfo-extra'), "#ccddff", 350, true,
-				'<span class="ui-icon ui-icon-arrowthick-1-s"></span> <b>Horizontal dimension:</b> ' + ( (view.params.xaxis != null) ? view.cubesviewer.model.getDimensionParts(view.params.xaxis).label : "<i>None</i>") 
+				'<span class="cv-view-series-horizontal-info ui-icon ui-icon-arrowthick-1-s"></span> <b>Horizontal dimension:</b> ' + ( (view.params.xaxis != null) ? view.cubesviewer.model.getDimensionParts(view.params.xaxis).label : "<i>None</i>") 
 			);
 		}
 		
