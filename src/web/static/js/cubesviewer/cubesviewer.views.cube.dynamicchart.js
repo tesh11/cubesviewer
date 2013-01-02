@@ -291,7 +291,9 @@ function cubesviewerViewCubeDynamicChart() {
 	        
 	    	//return d.color || "#fff";
 	    	
-	    	if (d.y != 0) {
+	    	if (d.color != undefined) {
+	    		return d.color;
+	    	} else if ((d.parent != null) && (d.parent.parent != null)) {
 	    		d.color = colour(d.parent);
 	    	} else {
 	    		d.color = randColor();
