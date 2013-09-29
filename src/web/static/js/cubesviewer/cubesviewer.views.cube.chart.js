@@ -90,7 +90,6 @@ function cubesviewerViewCubeChart() {
 		
 		if (view.params.mode != "chart") return;
 		
-		$(view.container).find('.cv-view-viewdata').append('<h3>Chart</h3>');
 		
 		// Draw areas
 		view.cubesviewer.views.cube.chart.drawInfo(view);
@@ -100,6 +99,11 @@ function cubesviewerViewCubeChart() {
 		
 		// Explore menu
 		view.cubesviewer.views.cube.chart.drawChartMenu(view);
+
+		// Only if data section is empty
+		if ($(view.container).find('.cv-view-viewdata').children().size() == 0) {
+			$(view.container).find('.cv-view-viewdata').append('<h3>Series Chart</h3>');
+		}
 		
 		// Load data
 		view.cubesviewer.views.cube.chart.loadData(view);
@@ -111,22 +115,24 @@ function cubesviewerViewCubeChart() {
 	 */
 	this.drawChartMenu = function (view) {
 		
-		this.cubesviewer.views.cube.series.drawSeriesMenu(view);
+		this.cubesviewer.views.cube.series.drawSeriesMenu(view);	
 		
 		var menu = $(".cv-view-menu-view", $(view.container));
 		var cube = view.cube;
 		
-		menu.append(
-				'<div></div>' +
-				'<li><a href="#"><span class="ui-icon ui-icon-calculator"></span>Chart Type</a><ul style="width: 180px;">' +
-		  		'<li><a href="#" class="cv-view-chart-settype" data-charttype="pie">Pie</a></li>' +
-		  		'<li><a href="#" class="cv-view-chart-settype" data-charttype="bars-vertical">Bars Vertical</a></li>' +
-		  		'<li><a href="#" class="cv-view-chart-settype" data-charttype="bars-vertical-stacked">Bars Vertical (Stacked)</a></li>' +
-		  		'<li><a href="#" class="cv-view-chart-settype" data-charttype="lines">Lines</a></li>' +
-		  		'<li><a href="#" class="cv-view-chart-settype" data-charttype="lines-stacked">Lines (Stacked)</a></li>' +
-		  		'<li><a href="#" class="cv-view-chart-settype" data-charttype="radar">Radar</a></li>' +
+		menu.prepend(
+			'<li><a href="#"><span class="ui-icon ui-icon-calculator"></span>Chart Type</a><ul style="width: 180px;">' +
+	  		'<li><a href="#" class="cv-view-chart-settype" data-charttype="pie">Pie</a></li>' +
+	  		'<li><a href="#" class="cv-view-chart-settype" data-charttype="bars-vertical">Bars Vertical</a></li>' +
+	  		'<li><a href="#" class="cv-view-chart-settype" data-charttype="bars-vertical-stacked">Bars Vertical (Stacked)</a></li>' +
+	  		'<li><a href="#" class="cv-view-chart-settype" data-charttype="lines">Lines</a></li>' +
+	  		'<li><a href="#" class="cv-view-chart-settype" data-charttype="lines-stacked">Areas (Stacked)</a></li>' +
+	  		'<li><a href="#" class="cv-view-chart-settype" data-charttype="radar">Radar</a></li>' +
 	  	  '</ul></li>' +
-  		  '<div></div>' +
+  		  '<div></div>'
+	  	);
+	  	menu.append(
+	  	  '<div></div>' +
   		  '<li><a href="#" class="cv-view-chart-export"><span class="ui-icon ui-icon-script"></span>Export image</a></li>'
 		);
 		
@@ -184,15 +190,31 @@ function cubesviewerViewCubeChart() {
 		// Build params and include xaxis if present
 		var params = view.cubesviewer.views.cube.buildQueryParams(view, view.params.xaxis != null ? true : false, false);
 		
-		$('#' + view.id).find('.cv-view-viewdata').empty().append('<h3>Chart</h3><img src="' + view.cubesviewer.options.ajaxLoaderUrl + '" title="Loading..." /> Loading');
-		$.get(view.cubesviewer.options.cubesUrl + "/cube/" + view.cube.name + "/aggregate", params, 
+		view.cubesviewer.views.blockViewLoading(view);
+		
+		view.cubesviewer.cubesRequest(
+				"/cube/" + view.cube.name + "/aggregate",
+				params,
+				view.cubesviewer.views.cube.chart._loadDataCallback(view),
+				function() {
+					view.cubesviewer.views.unblockView(view);
+				}
+		);
+		
+		/*
+		var jqxhr = $.get(view.cubesviewer.options.cubesUrl + "/cube/" + view.cube.name + "/aggregate", params, 
 				view.cubesviewer.views.cube.chart._loadDataCallback(view), "json");
+		jqxhr.complete (function() {
+			view.cubesviewer.views.unblockView(view);
+		});
+		*/
 		
 	};
 	
 	this._loadDataCallback = function(view) {
 
 		var view = view;
+		
 		
 		return function (data, status) {
 			$(view.container).find('.cv-view-viewdata').empty();
@@ -216,7 +238,7 @@ function cubesviewerViewCubeChart() {
 			return;
 		}
 		
-		$(view.container).find('.cv-view-viewdata').css("width", "95%");
+		$(view.container).find('.cv-view-viewdata').css("width", "99%");
 		$(view.container).find('.cv-view-viewdata').append(
 			'<h3>Series Chart</h3>' +
 			'<div id="seriesChart-' + view.id + '" style="height: 380px; "></div>'
@@ -230,6 +252,16 @@ function cubesviewerViewCubeChart() {
 		// Process cells
 		view.cubesviewer.views.cube.explore._sortData (view, data.cells, view.params.xaxis != null ? true : false);
 		view.cubesviewer.views.cube.series._addRows (view, dataRows, dataTotals, colNames, colModel, data);
+		
+		// Join keys
+		if (view.params.drilldown.length > 0) {
+			colNames.splice (0, view.params.drilldown.length, "key");
+			$(dataRows).each(function(idx, e) {
+				var jointkey = [];
+				for (i = 0; i < view.params.drilldown.length; i++) jointkey.push(e["key" + i]);
+				e["key"] = jointkey.join(" / ");
+			});
+		}
 		
 		if (view.params.charttype == "bars-vertical") {
 			view.cubesviewer.views.cube.chart.drawChartBarsVertical(view, colNames, dataRows, dataTotals);
@@ -279,7 +311,7 @@ function cubesviewerViewCubeChart() {
 	    			serie.push( [ (view.params.charttype == "bars-vertical-stacked") ? (i * 10) : (i*10 + ((idx / numRows) * 9)), value] );
 	    		}
 	    	}
-	    	d.push({ data: serie, label: e["key"] != "" ? e["key"] : "UNDEF" });
+	    	d.push({ data: serie, label: e["key"] != "" ? e["key"] : "" });
 	    });
 	    d.sort(function(a,b) { return a.label < b.label ? -1 : (a.label > b.label ? +1 : 0) });
 	    
@@ -300,10 +332,14 @@ function cubesviewerViewCubeChart() {
 	        },
 	        mouse: {
 	            track: true,
-	            relative: true
+	            relative: true,
+            	trackFormatter:function(obj) {
+            		return (obj.series.label + ' -> ' + obj.series.xaxis.ticks[(Math.floor(obj.x / 10)) - 1].label + " = " + parseFloat(obj.y));
+            	}	            
 	        },
 	        yaxis: {
-	            //min: 0,
+	            // TODO: Check if this is applying correctly (null seems to be taken as 0)
+	        	min: (view.params.charttype == "bars-vertical-stacked" ? 0 : null),
 	            autoscaleMargin: 1
 	        },
 	        legend: {
@@ -316,8 +352,7 @@ function cubesviewerViewCubeChart() {
 	        },
 	        xaxis: {
 	            ticks: xticks
-	        }
-
+	        }	        
 	        
 	    });
 	    
@@ -345,7 +380,7 @@ function cubesviewerViewCubeChart() {
 	    			serie.push( [i*10, 0] );
 	    		}
 	    	}
-	    	d.push({ data: serie, label: e["key"] != "" ? e["key"] : "UNDEF" });
+	    	d.push({ data: serie, label: e["key"] != "" ? e["key"] : view.params.yaxis });
 	    	//d.push({ data: serie, label: e["key"], lines: { /*fill: (view.params.charttype == "lines-stacked")*/ } });
 	    });
 	    d.sort(function(a,b) { return a.label < b.label ? -1 : (a.label > b.label ? +1 : 0) });
@@ -364,11 +399,15 @@ function cubesviewerViewCubeChart() {
 	        lines: {
 	        	lineWidth: 1, 
 	        	shadow: false,
-	        	stacked: (view.params.charttype == "lines-stacked")
+	        	stacked: (view.params.charttype == "lines-stacked"),
+	        	fill: (view.params.charttype == "lines-stacked")
 	        },
 	        mouse: {
 	            track: true,
-	            relative: true
+	            relative: true,
+            	trackFormatter:function(obj) {
+            		return (obj.series.label + ' -> ' + obj.series.xaxis.ticks[(obj.x / 10) - 1].label + " = " + parseFloat(obj.y));
+            	}
 	        },
 	        legend: {
 	            position: "nw",
@@ -406,7 +445,7 @@ function cubesviewerViewCubeChart() {
 	    			serie.push( [0, value] );
 	    		}
 	    	}
-	    	d.push({ data: serie, label: e["key"] != "" ? e["key"] : "UNDEF" });
+	    	d.push({ data: serie, label: e["key"] != "" ? e["key"] : colNames[0] });
 	    });
 	    d.sort(function(a,b) { return a.label < b.label ? -1 : (a.label > b.label ? +1 : 0) });
 	    
@@ -417,10 +456,19 @@ function cubesviewerViewCubeChart() {
 	    
 	    view.flotrDraw = Flotr.draw(container, d, {
 	    	HtmlText: ! view.doExport,
-	        mouse: {
-	            track: true,
-	            relative: true
-	        },
+            xaxis: {
+                showLabels: false
+            },
+            yaxis: {
+                showLabels: false
+            }, 	        
+            mouse: {
+            	track: true,
+            	relative: true,
+            	trackFormatter:function(obj) {
+            		return (obj.series.label + ' -> ' + colNames[1] + " = " + parseFloat(obj.y));
+            	}
+            },
 	        grid: {
 	            verticalLines: false,
 	            horizontalLines: false
@@ -464,7 +512,7 @@ function cubesviewerViewCubeChart() {
 	    			serie.push( [i-1, 0] );
 	    		}
 	    	}
-	    	d.push({ data: serie, label: e["key"] != "" ? e["key"] : "UNDEF" });
+	    	d.push({ data: serie, label: e["key"] != "" ? e["key"] : view.params.yaxis });
 	    });
 	    d.sort(function(a,b) { return a.label < b.label ? -1 : (a.label > b.label ? +1 : 0) });
 	    

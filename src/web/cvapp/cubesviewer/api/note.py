@@ -28,47 +28,42 @@
 from piston.handler import BaseHandler
 from django.db.models import Q
 
-from cubesviewer.models import CubesView
+from cubesviewer.models import Note
 
-class ViewSaveHandler(BaseHandler):
+class NoteSaveHandler(BaseHandler):
 
     allowed_methods = ('POST')
 
     def create(self, request, *args, **kwargs):
 
-        #tview = None
-        if (int(request.POST["id"]) > 0):
-            tview = CubesView.objects.get(pk = request.POST["id"])
-            if (tview.owner_id != request.user.id):
-                raise Exception("Cannot save View belonging to other users.")
+        tnote = None
+        
+        tnotes = Note.objects.filter(pk = request.POST["key"])
+        if (len(tnotes) > 0):
+            tnote = tnotes[0]
         else:
-            tview = CubesView()
-
+            tnote = Note()
+            tnote.key = request.POST["key"]
+        
+        tnote.data = request.POST["data"]
+        tnote.update_user = request.user
+        
         # Update or delete as necessary
         if (str(request.POST["data"]) == ""):
-            tview.delete()
+            tnote.delete()
         else:
-            tview.name = request.POST["name"]
-            tview.data = request.POST["data"]
-            tview.owner = request.user
-            if (request.POST["shared"] == "true"):
-                tview.shared = True
-            else:
-                tview.shared = False
+            tnote.save()
 
-            tview.save()
+        return tnote
 
 
-        return tview
-
-
-class ViewListHandler(BaseHandler):
+class NoteViewHandler(BaseHandler):
 
     allowed_methods = ('GET')
     exclude = ()
 
     def read(self, request, *args, **kwargs):
 
-        return CubesView.objects.filter(Q(owner=request.user) | Q(shared=True))
-
+        note = Note.objects.filter(pk=kwargs['pk'])
+        return note
 

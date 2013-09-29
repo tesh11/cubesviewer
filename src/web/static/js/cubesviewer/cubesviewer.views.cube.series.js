@@ -38,7 +38,7 @@ function cubesviewerViewCubeSeries() {
 	this.onViewCreate = function(event, view) {
 		$.extend(view.params, {
 			"xaxis" : null,
-			"yaxis" : null
+			"yaxis" : "record_count"
 		});
 	}	
 	
@@ -66,8 +66,6 @@ function cubesviewerViewCubeSeries() {
 		
 		if (view.params.mode != "series") return;
 		
-		$(view.container).find('.cv-view-viewdata').append('<h3>Series Table</h3>');
-		
 		// Draw areas
 		view.cubesviewer.views.cube.series.drawInfo(view);
 
@@ -76,6 +74,11 @@ function cubesviewerViewCubeSeries() {
 		
 		// Explore menu
 		view.cubesviewer.views.cube.series.drawSeriesMenu(view);
+		
+		// Only if data is empty
+		if ($(view.container).find('.cv-view-viewdata').children().size() == 0) {
+			$(view.container).find('.cv-view-viewdata').empty().append('<h3>Series Table</h3>');
+		}
 		
 		// Load data
 		view.cubesviewer.views.cube.series.loadData(view);
@@ -123,13 +126,15 @@ function cubesviewerViewCubeSeries() {
 		measuresElements = measuresElements + '<div></div>';
 		$(view.cube.measures).each(function(idx, e) {
 			
-			if ("aggregations" in e) {			
+			measuresElements = measuresElements + '<li><a href="#">' + e.name + '</a><ul style="width: 170px; z-index: 9999;">';
+			if ("aggregations" in e) {
 				$(e.aggregations).each(function(idx, ea) {
-					measuresElements = measuresElements + '<li><a href="#" class="cv-view-series-setyaxis" data-measure="' + e.name + '_' + ea + '">' + e.name + ' / ' + ea + '</a></li>';
+					measuresElements = measuresElements + '<li><a href="#" class="cv-view-series-setyaxis" data-measure="' + e.name + '_' + ea + '">' + ea + '</a></li>';
 				});
 			} else {
-				measuresElements = measuresElements + '<li><a href="#" class="cv-view-series-setyaxis" data-measure="' + e.name + '_' + "sum" + '">' + e.name + ' / ' + "sum" + '</a></li>';
+				measuresElements = measuresElements + '<li><a href="#" class="cv-view-series-setyaxis" data-measure="' + e.name + '_' + "sum" + '">' + "sum" + '</a></li>';
 			}
+			measuresElements = measuresElements + '</ul></li>';
 			
 		});
 		
@@ -139,7 +144,7 @@ function cubesviewerViewCubeSeries() {
 		  		drillElements +
 		  		'<div></div>' +
 		  		'<li><a href="#" class="cv-view-series-setxaxis" data-dimension="">None</a></li>' +
-		  '</ul><li><a href="#"><span class="ui-icon ui-icon-zoomin"></span>Measure</a><ul style="width: 180px;">' +
+		  '</ul><li><a href="#"><span class="ui-icon ui-icon-zoomin"></span>Measure</a><ul style="min-width: 180px;">' +
 	  	  		measuresElements +
 	  	  '</ul></li>'
 		);
@@ -199,11 +204,16 @@ function cubesviewerViewCubeSeries() {
 		// Build params and include xaxis if present
 		var params = view.cubesviewer.views.cube.buildQueryParams(view, view.params.xaxis != null ? true : false, false);
 		
-		$(view.container).find('.cv-view-viewdata').empty().append(
-			'<h3>Series Table</h3><img src="' + view.cubesviewer.options.ajaxLoaderUrl + '" title="Loading" /> <i>Loading</i>'
+		view.cubesviewer.views.blockViewLoading(view);
+		
+		view.cubesviewer.cubesRequest(
+				"/cube/" + view.cube.name + "/aggregate",
+				params,
+				view.cubesviewer.views.cube.series._loadDataCallback(view),
+				function() {
+					view.cubesviewer.views.unblockView(view);
+				}
 		);
-		$.get(view.cubesviewer.options.cubesUrl + "/cube/" + view.cube.name + "/aggregate", params, 
-				view.cubesviewer.views.cube.series._loadDataCallback(view), "json");
 		
 	};
 	
@@ -280,17 +290,17 @@ function cubesviewerViewCubeSeries() {
 		
 		$('#seriesTable-' + view.id).jqGrid({ 
 			data: dataRows,
-			userData: dataTotals,
+			//userData: dataTotals,
 			datatype: "local", 
 			height: 'auto', 
-			rowNum: 15, 
-			rowList: [15,30,50,100], 
+			rowNum: cubesviewer.options.pagingOptions[0], 
+			rowList: cubesviewer.options.pagingOptions, 
 			colNames: colNames, 
 			colModel: colModel, 
 	        pager: "#seriesPager-" + view.id, 
-	        sortname: 'key', 
+	        sortname: cubesviewer.views.cube.explore.defineColumnSort(view, ["key", "desc"])[0], 
 	        viewrecords: true, 
-	        sortorder: "desc", 
+	        sortorder: cubesviewer.views.cube.explore.defineColumnSort(view, ["key", "desc"])[1], 
 	        footerrow: true,
 	        userDataOnFooter: true,
 	        forceFit: false,
@@ -299,7 +309,16 @@ function cubesviewerViewCubeSeries() {
 	        //multiboxonly: true,
 			
 	        //caption: "Current selection data" ,
-	        beforeSelectRow : function () { return false; }
+	        beforeSelectRow : function () { return false; },
+	        
+			loadComplete : function() {
+				// Call hook
+				view.cubesviewer.views.cube.explore.onTableLoaded (view);
+			},
+	        
+	        resizeStop: view.cubesviewer.views.cube.explore._onTableResize (view),
+			onSortCol: view.cubesviewer.views.cube.explore._onTableSort (view), 
+	        
 	    } );
 		
 		this.cubesviewer.views.cube._adjustGridSize();
@@ -319,18 +338,19 @@ function cubesviewerViewCubeSeries() {
 		if (view.params.xaxis != null) {
 			drilldown.splice(0,0, view.params.xaxis);
 		}
+		var baseidx = ((view.params.xaxis == null) ? 0 : 1);
 
 		$(data.cells).each(function (idx, e) {
 			
 			var row = [];
 			var key = [];
 			
-			// For the horizontal axis drilldown level, if present
+			// For the drilldown level, if present
 			for (var i = 0; i < drilldown.length; i++) {
 
 				// Get dimension
 				var parts = cubesviewer.model.getDimensionParts(drilldown[i]);
-				var infos = parts.hierarchy.readCell(e);
+				var infos = parts.hierarchy.readCell(e, parts.level);
 				
 				// Values and Labels
 				var drilldown_level_values = [];
@@ -358,13 +378,18 @@ function cubesviewerViewCubeSeries() {
 				var newrow = {};
 				newrow["key"] = rowKey;
 				newrow[colKey] = value;
+				
+				for (var i = baseidx ; i < key.length; i++) {
+					newrow["key" + (i - baseidx)] = key[i];
+				}
+				
 				rows.push ( newrow );
 			}
 
 			if (colNames.indexOf(colKey) < 0) {
 				colNames.push (colKey);
 				colModel.push ({ 
-					name: colKey, index: colKey, align: "right", sorttype: "number", width: 100,
+					name: colKey, index: colKey, align: "right", sorttype: "number", width: cubesviewer.views.cube.explore.defineColumnWidth(view, colKey, 100),
 			        formatter: 'number', 
 			        formatoptions: { decimalSeparator:".", thousandsSeparator: " ", decimalPlaces: 2 }	
 				});
@@ -373,15 +398,19 @@ function cubesviewerViewCubeSeries() {
 			
 		});
 
-		var label = [];
-		$(view.params.drilldown).each (function (idx, e) { label.push (view.cubesviewer.model.getDimension(e).label); })
-		colNames.splice(0, 0, label.join (' / '));
-
-		colModel.splice(0, 0, { name: "key", index: "key", align: "left", width: 180 });
-		dataTotals["key"] = "<b>Summary</b>";
+		//var label = [];
+		$(view.params.drilldown).each (function (idx, e) { 
+			//label.push (view.cubesviewer.model.getDimension(e).label);
+			colNames.splice(idx, 0, view.cubesviewer.model.getDimension(e).label);
+			colModel.splice(idx, 0, { name: "key" + idx , index: "key" + idx , align: "left", width: cubesviewer.views.cube.explore.defineColumnWidth(view, "key" + idx, 190) });
+		});
 		
-		if (rows.length == 1) {
-			rows[0]["key"] = view.params.yaxis;
+		dataTotals["key0"] = "<b>Summary</b>";
+		
+		if (view.params.drilldown.length == 0) {
+			rows[0]["key0"] = view.params.yaxis;
+			colNames.splice(0, 0, "Measure");
+			colModel.splice(0, 0, { name: "key0", index: "key0", align: "left", width: cubesviewer.views.cube.explore.defineColumnWidth(view, "key0", 190) });
 		}
 		
 	};

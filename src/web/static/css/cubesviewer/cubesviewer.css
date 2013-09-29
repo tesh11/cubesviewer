@@ -60,3 +60,19 @@ a.cv-grid-link {
     color: blue;
 }
 
+.cv-gui-viewcontent {
+	overflow: hidden;
+}
+
+.ajaxloader {
+	background-image: url(ajax-loader.gif);
+	background-repeat: no-repeat;
+	width: 16px;
+	height: 16px;
+	margin: 8px;
+	display: inline-block;
+}
+
+.fixed {
+   position: fixed;
+}

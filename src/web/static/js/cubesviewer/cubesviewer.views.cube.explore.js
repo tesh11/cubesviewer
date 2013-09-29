@@ -54,6 +54,9 @@ function cubesviewerViewCubeExplore() {
 		);
 		
 		// Buttonize
+		$(view.container).find('.drilldownbutton').button();
+		$(view.container).find('.cutbutton').button();
+		
 		$(view.container).find('.explorebutton').button();
 		$(view.container).find('.explorebutton').click(function() { 
 			view.cubesviewer.views.cube.explore.modeExplore(view);
@@ -68,13 +71,16 @@ function cubesviewerViewCubeExplore() {
 		
 		if (view.params.mode != "explore") return;
 		
-		$(view.container).find('.cv-view-viewdata').append('<h3>Aggregated Data</h3>');
-		
 		// Draw areas
 		view.cubesviewer.views.cube.explore.drawInfo(view);
 
 		// Highlight
 		$(view.container).find('.explorebutton').button("option", "disabled", "true").addClass('ui-state-active');
+
+		// Only if data section is empty
+		if ($(view.container).find('.cv-view-viewdata').children().size() == 0) {
+			$(view.container).find('.cv-view-viewdata').append('<h3>Aggregated Data</h3>');
+		}
 		
 		// Load data
 		view.cubesviewer.views.cube.explore.loadData(view);
@@ -104,12 +110,12 @@ function cubesviewerViewCubeExplore() {
 					drillElements + 
 					'<li><a href="#" class="' + cssclass + ' ' + disabled + '" data-dimension="' + dimension.name + '" data-value="1">' + dimension.label + '</a></li>';
 			} else {
-				drillElements = drillElements + '<li><a href="#">' + dimension.label + 
+				drillElements = drillElements + '<li><a href="#" onclick="return false;">' + dimension.label + 
 					'</a><ul class="drillList" style="width: 170px; z-index: 9999;">';
 				
 				if (dimension.hierarchies.length > 1) {
 					$(dimension.hierarchies).each(function(idx,hi) {
-						drillElements = drillElements + '<li><a href="#">' + hi.label + 
+						drillElements = drillElements + '<li><a href="#" onclick="return false;">' + hi.label + 
 						'</a><ul class="drillList" style="width: 160px; z-index: 9999;">';
 						$(hi.levels).each(function(idx, el) { 
 							var level = dimension.getLevel(el);
@@ -175,8 +181,8 @@ function cubesviewerViewCubeExplore() {
 
 				var disabled = "";
 				dateFilterElements = dateFilterElements + '<li><a href="#" class="selectDateFilter '  + disabled + 
-					'" data-dimension="' + dimension.name + ((dimension.getInfo("cv-datefilter-hierarchy") != null) ? "@" + dimension.getInfo("cv-datefilter-hierarchy") : "") +  
-					'" data-value="1">' + dimension.label + ((dimension.getInfo("cv-datefilter-hierarchy") != null) ? " / " + dimension.getHierarchy(dimension.getInfo("cv-datefilter-hierarchy")).label : "") +
+					'" data-dimension="' + dimension.name + ((dimension.getInfo("cv-datefilter-hierarchy")) ? "@" + dimension.getInfo("cv-datefilter-hierarchy") : "") +  
+				'" data-value="1">' + dimension.label + ((dimension.getHierarchy(dimension.getInfo("cv-datefilter-hierarchy"))) ? " / " + dimension.getHierarchy(dimension.getInfo("cv-datefilter-hierarchy")).label : "") +
 					'</a></li>';
 			}
 
@@ -189,7 +195,7 @@ function cubesviewerViewCubeExplore() {
 		menu.append(
 				'<li><a href="#" class="selectCut" data-dimension="" data-value="" ><span class="ui-icon ui-icon-close"></span>Clear filters</a></li>' +
 				'<div></div>' + 
-				'<li><a href="#"><span class="ui-icon ui-icon-zoomin"></span>Add date filter</a><ul class="dateFilterList" style="width: 180px;">' + 
+				'<li><a href="#" onclick="return false;"><span class="ui-icon ui-icon-zoomin"></span>Add date filter</a><ul class="dateFilterList" style="width: 180px;">' + 
 				dateFilterElements + 
 				'</ul></li>'
 		);
@@ -249,14 +255,17 @@ function cubesviewerViewCubeExplore() {
 
 		var params = this.cubesviewer.views.cube.buildQueryParams(view, false, false);
 
-		$(view.container).find('.cv-view-viewdata').empty().append(
-				'<h3>Aggregated Data</h3>' +
-				'<img style="vertical-align: middle;" src="' + cubesviewer.options.ajaxLoaderUrl + '" title="Loading..." /> <i>Loading</i>'
+		view.cubesviewer.views.blockViewLoading(view);
+		
+		view.cubesviewer.cubesRequest(
+				"/cube/" + view.cube.name + "/aggregate",
+				params,
+				view.cubesviewer.views.cube.explore._loadDataCallback(view),
+				function() {
+					view.cubesviewer.views.unblockView(view);
+				}
 		);
 		
-		$.get(this.cubesviewer.options.cubesUrl + "/cube/" + view.cube.name + "/aggregate",
-				params, this.cubesviewer.views.cube.explore._loadDataCallback(view), "json");
-
 	};
 
 	/*
@@ -338,7 +347,7 @@ function cubesviewerViewCubeExplore() {
 
 				// Get dimension
 				var parts = cubesviewer.model.getDimensionParts(view.params.drilldown[i]);
-				var infos = parts.hierarchy.readCell(e);
+				var infos = parts.hierarchy.readCell(e, parts.level);
 				
 				// Values and Labels
 				var drilldown_level_values = [];
@@ -359,7 +368,11 @@ function cubesviewerViewCubeExplore() {
 			}
 
 			// Set key
-			row["key"] = key.join(' / ');
+			row["key"] = key.join (" / ");
+			for (var i = 0; i < key.length; i++) {
+				row["key" + i] = key[i];
+			}
+			//row["key"] = key.join(' / ');
 
 			for ( var column in data.summary) {
 				row[column] = e[column];
@@ -373,7 +386,7 @@ function cubesviewerViewCubeExplore() {
 		// This allows a scrollbar to appear in jqGrid when only the summary row is shown. 
 		if (rows.length == 0) {
 			var row = [];
-			row["key"] = "Summary";
+			row["key0"] = "Summary";
 			for ( var column in data.summary) {
 				row[column] = data.summary[column];
 			}
@@ -382,6 +395,12 @@ function cubesviewerViewCubeExplore() {
 		
 	},
 
+	this.columnTooltipAttr = function(column) {
+		return function (rowId, val, rawObject) {
+			return 'title="' + column + ' = ' + val + '"';
+		}; 
+	};
+	
 	/*
 	 * Show received summary
 	 */ 
@@ -407,8 +426,9 @@ function cubesviewerViewCubeExplore() {
 				index : column,
 				align : "right",
 				sorttype : "number",
-				width : 105,
+				width : cubesviewer.views.cube.explore.defineColumnWidth(view, column, 95),
 				formatter: 'number',  
+				cellattr: this.columnTooltipAttr(column),
 				formatoptions: { decimalSeparator:".", thousandsSeparator: " ", decimalPlaces: 2 }
 			});
 			dataTotals[column] = data.summary[column];
@@ -427,15 +447,28 @@ function cubesviewerViewCubeExplore() {
 		$(view.params.drilldown).each(function(idx, e) {
 			label.push(cubesviewer.model.getDimension(e).label);
 		})
-		colNames.splice(0, 0, label.join(' / '));
-
-		colModel.splice(0, 0, {
-			name : "key",
-			index : "key",
-			align : "left",
-			width: 130 + (80 * view.params.drilldown.length)
-		});
-		dataTotals["key"] = ((view.params.cuts.length == 0) && (view.params.datefilters.length == 0)) ? "<b>Summary</b>"
+		for (var i = 0; i < view.params.drilldown.length; i++) {
+		
+			colNames.splice(i, 0, label[i]);
+	
+			colModel.splice(i, 0, {
+				name : "key" + i,
+				index : "key" + i,
+				align : "left",
+				width: cubesviewer.views.cube.explore.defineColumnWidth(view, "key" + i, 130)
+			});
+		}
+		if (view.params.drilldown.length == 0) {
+			colNames.splice(0, 0, "");
+			colModel.splice(0, 0, {
+				name : "key" + 0,
+				index : "key" + 0,
+				align : "left",
+				width: cubesviewer.views.cube.explore.defineColumnWidth(view, "key" + 0, 110)
+			});
+		}
+		
+		dataTotals["key0"] = ((view.params.cuts.length == 0) && (view.params.datefilters.length == 0)) ? "<b>Summary</b>"
 				: "<b>Summary <i>(Filtered)</i></b>";
 
 		$('#summaryTable-' + view.id).get(0).updateIdsOfSelectedRows = function(
@@ -458,14 +491,14 @@ function cubesviewerViewCubeExplore() {
 							userData : dataTotals,
 							datatype : "local",
 							height : 'auto',
-							rowNum : 15,
-							rowList : [ 15, 30, 50, 100 ],
+							rowNum : cubesviewer.options.pagingOptions[0],
+							rowList : cubesviewer.options.pagingOptions,
 							colNames : colNames,
 							colModel : colModel,
 							pager : "#summaryPager-" + view.id,
-							sortname : 'key',
+							sortname : cubesviewer.views.cube.explore.defineColumnSort(view, ["key", "desc"])[0],
 							viewrecords : true,
-							sortorder : "desc",
+							sortorder : cubesviewer.views.cube.explore.defineColumnSort(view, ["key", "desc"])[1],
 							footerrow : true,
 							userDataOnFooter : true,
 							forceFit : false,
@@ -500,15 +533,51 @@ function cubesviewerViewCubeExplore() {
 															.get(0).idsOfSelectedRows[i],
 													false);
 								}
-							}
+								// Call hook
+								view.cubesviewer.views.cube.explore.onTableLoaded (view);
+							},
+							resizeStop: view.cubesviewer.views.cube.explore._onTableResize (view),
+							onSortCol: view.cubesviewer.views.cube.explore._onTableSort (view), 
 
 						});
 
 		this.cubesviewer.views.cube._adjustGridSize(); // remember to copy also the window.bind-resize init
 
+		
 	};
 
-
+	this._onTableSort = function (view) {
+		return function (index, iCol, sortorder) {
+			view.cubesviewer.views.cube.explore.onTableSort (view, index, iCol, sortorder);
+		}
+	}
+	
+	this._onTableResize = function (view) {
+		return function(width, index) {
+			view.cubesviewer.views.cube.explore.onTableResize (view, width, index);
+		};
+	};
+	
+	this.onTableResize = function (view, width, index) {
+		// Empty implementation, to be overrided
+		//alert("resize column " + index + " to " + width + " pixels");
+	};
+	this.onTableLoaded = function (view) {
+		// Empty implementation, to be overrided
+	};
+	this.onTableSort = function (view, key, index, iCol, sortorder) {
+		// Empty implementation, to be overrided
+	};
+	
+	this.defineColumnWidth = function (view, column, vdefault) {
+		// Simple implementation. Overrided by the columns plugin.
+		return vdefault;
+	};
+	this.defineColumnSort = function (view, vdefault) {
+		// Simple implementation. Overrided by the columns plugin.
+		return vdefault;
+	};
+		
 
 	this.drawDateFilter = function(view, datefilter, container) {
 
@@ -523,7 +592,8 @@ function cubesviewerViewCubeExplore() {
 								+ '<option value="auto-last3m">Last 3 months</option>'
 								+ '<option value="auto-last6m">Last 6 months</option>'
 								+ '<option value="auto-last12m">Last year</option>'
-								+ '<option value="auto-january1st">From Juanary 1st</option>'
+								+ '<option value="auto-january1st">From January 1st</option>'
+								+ '<option value="auto-yesterday">Yesterday</option>'
 								+ '</optgroup>' + '</select> ' + 'Range: '
 								+ '<input name="date_start" /> - '
 								+ '<input name="date_end" /> ');
@@ -562,6 +632,7 @@ function cubesviewerViewCubeExplore() {
 	};
 
 	this.drawInfoPiece = function(selector, color, maxwidth, readonly, content) {
+
 		var maxwidthStyle = "";
 		if (maxwidth != null) {
 			maxwidthStyle = "max-width: " + maxwidth + "px;";
@@ -582,10 +653,12 @@ function cubesviewerViewCubeExplore() {
 	// Draw information bubbles
 	this.drawInfo = function(view, readonly) {
 
+		$(view.container).find('.cv-view-viewinfo').empty();
+		
 		var drawHeader = ((view.params.cuts.length > 0) || (view.params.drilldown.length > 0)
 				|| (view.params.datefilters.length > 0));
 		if (drawHeader) {
-			$(view.container).find('.cv-view-viewinfo').append('<div><h3>Current slice</h3></div>');
+			//$(view.container).find('.cv-view-viewinfo').append('<div><h3 style="margin-top: 0px;">Current slice</h3></div>');
 		} 
 		
 		$(view.container).find('.cv-view-viewinfo').append(
@@ -597,14 +670,14 @@ function cubesviewerViewCubeExplore() {
 		
 		var piece = view.cubesviewer.views.cube.explore.drawInfoPiece(
 			$(view.container).find('.cv-view-viewinfo-drill'), "#000000", 200, true,
-			'<span class="ui-icon ui-icon-info"></span> <span style="color: white;"><b>Cube:</b> ' + view.cube.label + '</span>' 
+			'<span class="ui-icon ui-icon-info"></span> <span style="color: white;" class="cv-view-viewinfo-cubename"><b>Cube:</b> ' + view.cube.label + '</span>' 
 		);
 	
 		$(view.params.drilldown).each(function(idx, e) {
 			
 			var dimparts = view.cubesviewer.model.getDimensionParts(e);
 			var piece = cubesviewer.views.cube.explore.drawInfoPiece(
-				$(view.container).find('.cv-view-viewinfo-drill'), "#ccffcc", 300, readonly,
+				$(view.container).find('.cv-view-viewinfo-drill'), "#ccffcc", 360, readonly,
 				'<span class="ui-icon ui-icon-arrowthick-1-s"></span> <b>Drilldown:</b> ' + dimparts.label 
 			);
 			piece.find('.cv-view-infopiece-close').click(function() {
@@ -616,7 +689,7 @@ function cubesviewerViewCubeExplore() {
 		$(view.params.cuts).each(function(idx, e) { 
 			var dimparts = view.cubesviewer.model.getDimensionParts(e.dimension);
 			var piece = cubesviewer.views.cube.explore.drawInfoPiece(
-				$(view.container).find('.cv-view-viewinfo-cut'), "#ffcccc", 450, readonly,
+				$(view.container).find('.cv-view-viewinfo-cut'), "#ffcccc", 480, readonly,
 				'<span class="ui-icon ui-icon-zoomin"></span> <b>Cut: </b> ' + dimparts.label  + ' = ' + 
 				'<span title="' + e.value + '">' + e.value + '</span>'
 			);
@@ -667,7 +740,7 @@ function cubesviewerViewCubeExplore() {
 		for (i = 0, count = $('#summaryTable-' + view.id).get(0).idsOfSelectedRows.length; i < count; i++) {
 			var data = $('#summaryTable-' + view.id).getRowData(
 					$('#summaryTable-' + view.id).get(0).idsOfSelectedRows[i]);
-			var dom = $(data["key"]);
+			var dom = $(data["key0"]);
 			filterValues.push($(dom).attr("data-value"));
 		}
 		this.selectCut(view, $(dom).attr("data-dimension"), filterValues.join(";"));
@@ -679,20 +752,26 @@ function cubesviewerViewCubeExplore() {
 
 		if (dimension != "") {
 			if (value != "") {
+				/*
 				var existing_cut = $.grep(view.params.cuts, function(e) {
 					return e.dimension == dimension;
 				});
 				if (existing_cut.length > 0) {
-					view.cubesviewer.alert("Cannot cut dataset. Dimension '" + dimension + "' is already filtered.");
-					return;
-				} else {
+					//view.cubesviewer.alert("Cannot cut dataset. Dimension '" + dimension + "' is already filtered.");
+					//return;
+				}  else {*/
+					view.params.cuts = $.grep(view.params.cuts, function(e) {
+						return e.dimension == dimension;
+					}, true);
 					view.params.cuts.push({
 						"dimension" : dimension,
 						"value" : value
 					});
 					// Don't drill cut dimension
-					cubesviewer.views.cube.explore.removeDrill(view, dimension);
-				}
+					if (value.indexOf(";") < 0) {
+						cubesviewer.views.cube.explore.removeDrill(view, dimension);
+					}
+				/*}*/
 			} else {
 				view.params.cuts = $.grep(view.params.cuts, function(e) {
 					return e.dimension == dimension;

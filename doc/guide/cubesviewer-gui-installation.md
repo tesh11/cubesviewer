@@ -39,16 +39,19 @@ CubesViewer application runs on Python/Django. You need to have the following pa
 * Python 2.7
 * Django 1.3
 
+You will also need the following Python packages:
+* requests
+* django-piston
+
 Django applications can run on local SQLite files, but if you plan to run on a different database system, you may
-need to install also the Python connectors for the appropriate database backend (i. python-mysqldb).   
+need to install also the Python connectors for the appropriate database backend (ie. python-mysqldb).   
 
 ## 3 - Download and install CubesViewer
 
 Download CubesViewer project from GitHub (https://github.com/jjmontesl/cubesviewer). You can use 'git' or [download the ZIP 
 version](https://github.com/jjmontesl/cubesviewer/archive/master.zip) of the project. 
 
-Put the content of the /src directory of the project, in the target directory of your choice (ie../opt/cubesviewer in a Linux
-environment).
+Put the content of the /src directory of the project, in the target directory of your choice.
 
 ## 4 - Configure the application.
 
@@ -96,11 +99,22 @@ CUBESVIEWER_CUBES_URL="http://localhost:5000"
 
 # CubesViewer Store backend URL. It should point to this application.
 CUBESVIEWER_BACKEND_URL="http://localhost:8000/cubesviewer"
+
+# Optional user and password tuple to access the backend, or False
+# (only meaningful when CubesViewer Cubes proxy is used)
+#CUBESVIEWER_CUBES_PROXY_USER = ('user', 'password') 
+CUBESVIEWER_CUBES_PROXY_USER = None
+
+# CubesViewer Proxy ACL
+# (only meaningful when CubesViewer Cubes proxy is used)
+# ie. CUBESVIEWER_PROXY_ACL = [ { "cube": "my_cube", "group": "my_group" } ]
+CUBESVIEWER_PROXY_ACL = [
+                         ]
 ```
 
 ```python
 ##
-# 3. Other Django application settings (should work by default)
+# 3. Other Django application settings
 ##
 
 # Path to static files

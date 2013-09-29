@@ -5,14 +5,23 @@
 
 <link type="text/css" rel="stylesheet" href="{{ STATIC_URL }}css/cubesviewer/cubesviewer.css" />    
 <link type="text/css" rel="stylesheet" href="{{ STATIC_URL }}js/wiky/wiky.math.css" />    
+<link type="text/css" rel="stylesheet" href="{{ STATIC_URL }}css/jqgrid/ui.jqgrid.css" />
+<link type="text/css" rel="stylesheet" href="{{ STATIC_URL }}js/qtip/jquery.qtip.css" />
     
+<script type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery.blockUI.js"></script>
+
 <script type="text/javascript" src="{{ STATIC_URL }}js/wiky/wiky.js"></script>
 <script type="text/javascript" src="{{ STATIC_URL }}js/wiky/wiky.math.js"></script>
 <script type="text/javascript" src="{{ STATIC_URL }}js/flotr2/flotr2.min.js"></script>
 
 <script type="text/javascript" src="{{ STATIC_URL }}js/d3js/d3.v2.min.js"></script>
+<script type="text/javascript" src="{{ STATIC_URL }}js/qtip/jquery.qtip.js"></script>
+
+<script type="text/javascript" src="{{ STATIC_URL }}js/jqgrid/i18n/grid.locale-en.js" ></script>
+<script type="text/javascript" src="{{ STATIC_URL }}js/jqgrid/jquery.jqGrid.min.js" ></script>
 
 <script type="text/javascript" src="{{ STATIC_URL }}js/cubesviewer/cubesviewer.js"></script>
+<script type="text/javascript" src="{{ STATIC_URL }}js/cubesviewer/cubesviewer.cache.js"></script> 
 <script type="text/javascript" src="{{ STATIC_URL }}js/cubesviewer/cubesviewer.model.js"></script>
 <script type="text/javascript" src="{{ STATIC_URL }}js/cubesviewer/cubesviewer.views.js"></script>
 <script type="text/javascript" src="{{ STATIC_URL }}js/cubesviewer/cubesviewer.views.cube.js"></script>
@@ -20,9 +29,14 @@
 <script type="text/javascript" src="{{ STATIC_URL }}js/cubesviewer/cubesviewer.views.cube.series.js"></script>
 <script type="text/javascript" src="{{ STATIC_URL }}js/cubesviewer/cubesviewer.views.cube.chart.js"></script>
 <script type="text/javascript" src="{{ STATIC_URL }}js/cubesviewer/cubesviewer.views.cube.dynamicchart.js"></script>
+<script type="text/javascript" src="{{ STATIC_URL }}js/cubesviewer/cubesviewer.views.cube.columns.js"></script>
 <script type="text/javascript" src="{{ STATIC_URL }}js/cubesviewer/cubesviewer.views.cube.export.js"></script>
+<script type="text/javascript" src="{{ STATIC_URL }}js/cubesviewer/cubesviewer.views.undo.js"></script>
+<script type="text/javascript" src="{{ STATIC_URL }}js/cubesviewer/cubesviewer.views.notes.js"></script>
 <script type="text/javascript" src="{{ STATIC_URL }}js/cubesviewer/cubesviewer.gui.js"></script>
 <script type="text/javascript" src="{{ STATIC_URL }}js/cubesviewer/cubesviewer.gui.reststore.js"></script>
+<script type="text/javascript" src="{{ STATIC_URL }}js/cubesviewer/cubesviewer.gui.serializing.js"></script>
+<script type="text/javascript" src="{{ STATIC_URL }}js/cubesviewer/cubesviewer.gui.localeswitcher.js"></script>
 
 <script type="text/javascript">
 	
@@ -30,8 +44,8 @@
 	$(document).ready(function() {
 	    
 		cubesviewer.init({
-	        cubesUrl: "{{ cubesviewer_cubes_url }}",
-	        ajaxLoaderUrl: "/static/img/ajax-loader.gif"
+	        cubesUrl: "{{ cubesviewer_cubes_url }}"
+	        //cubesUrl: "{{ cubesviewer_backend_url }}/cubes"
 	    });
 		
 		cubesviewer.gui.init({

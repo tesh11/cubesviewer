@@ -36,12 +36,6 @@ function cubesviewerViewCube () {
 		
 		$.extend(view.params, {
 	
-			//"savedId" : 0,
-			//"notes" : "",
-			
-			//"owner" : null
-			//"shared" : false,
-	
 			"mode" : "explore",
 			
 			"drilldown" : [],
@@ -74,7 +68,7 @@ function cubesviewerViewCube () {
 		);
 		
 		// Buttonize
-		$(view.container).find('.cv-view-toolbar').find('button').button();
+		$(view.container).find('.viewbutton').button();
 		
 		// Menu functionality
 		view.cubesviewer.views.cube._initMenu(view, '.viewbutton', '.cv-view-menu-view');
@@ -86,11 +80,15 @@ function cubesviewerViewCube () {
 	 */
 	this.onViewDraw = function(event, view) {
 		
-		$(view.container).empty();
-		$(view.container).append('<div class="cv-view-viewmenu"></div>');
-		$(view.container).append('<div class="cv-view-viewinfo"></div>');
-		$(view.container).append('<div class="cv-view-viewdata" style="clear: both;"></div>');
-		$(view.container).append('<div class="cv-view-viewfooter" style="clear: both;"></div>');
+		if ($(".cv-view-viewdata", $(view.container)).size() == 0) {
+
+			$(view.container).empty();
+			$(view.container).append('<div class="cv-view-viewmenu"></div>');
+			$(view.container).append('<div class="cv-view-viewinfo"></div>');
+			$(view.container).append('<div class="cv-view-viewdata" style="clear: both;"></div>');
+			$(view.container).append('<div class="cv-view-viewfooter" style="clear: both;"></div>');
+			
+		}
 		
 		// Check if the model/cube is loaded.
 		if (view.cube == null) {
@@ -101,8 +99,8 @@ function cubesviewerViewCube () {
 		}
 		
 		// Menu toolbar
-		$(view.container).find('.cv-view-viewmenu').append(
-			'<div style="float: right; z-index: 9990; "><div class="cv-view-toolbar ui-widget-header ui-corner-all">' +
+		$(view.container).find('.cv-view-viewmenu').empty().append(
+			'<div style="float: right; z-index: 9990; "><div class="cv-view-toolbar ui-widget-header ui-corner-all" style="display: inline-block;">' +
 			'</div></div>'
 		);
 		
@@ -116,7 +114,7 @@ function cubesviewerViewCube () {
 	 */
 	this._initMenu = function (view, buttonSelector, menuSelector) {
 		//view.cubesviewer.views.initMenu('.panelbutton', '.cv-view-menu-panel');
-		$('.cv-view-toolbar', $(view.container)).find(buttonSelector).mouseenter(function() {
+		$('.cv-view-toolbar', $(view.container)).find(buttonSelector).click(function() {
 
 			$('.cv-view-menu').hide();
 
@@ -131,15 +129,27 @@ function cubesviewerViewCube () {
 				at : "right bottom",
 				of : this
 			});
-			$(document).one("click", function() {
-				menu.fadeOut();
-			});
+			$(document).one("click", cubesviewer.views.cube._hideMenu(menu));
+
 			return false;
 		});
 
 		$(menuSelector, $(view.container)).menu({}).hide();
 		
-	}
+	};
+	
+	/**
+	 * Hide menus when mouse clicks outside them, but not when inside.
+	 */
+	this._hideMenu = function (menu) {
+		return function(evt) {
+			if ($(menu).find(evt.target).size() == 0) {
+				menu.fadeOut();
+			} else {
+				$(document).one("click", cubesviewer.views.cube._hideMenu(menu));
+			}
+		}
+	};
 	
 	/*
 	 * Adjusts grids size
@@ -148,14 +158,14 @@ function cubesviewerViewCube () {
 
 		// TODO: use appropriate container width!
 		var newWidth = $(window).width() - 350;
-
+		
 		$(".ui-jqgrid-btable").each(function(idx, el) {
 			var currentWidth = $(el).width();
-			if (newWidth < 600)
-				newWidth = 600;
-			if (currentWidth > newWidth) {
+			if (newWidth < 700) newWidth = 700;
+
+			//if ((currentWidth > newWidth) /*|| (currentWidth < newWidth - 50) */ ) {
 				$(el).setGridWidth(newWidth);
-			}
+			//}
 		});
 	};
 	
@@ -185,6 +195,11 @@ function cubesviewerViewCube () {
 				date_from = new Date();
 				date_from.setMonth(0);
 				date_from.setDate(1);
+			} else if (datefilter.mode == "auto-yesterday") {
+				date_from = new Date();
+				date_from.setDate(date_from.getDate() - 1);
+				date_to = new Date();
+                date_to.setDate(date_from.getDate());
 			}
 
 		} else if (datefilter.mode == "custom") {
@@ -230,6 +245,8 @@ function cubesviewerViewCube () {
 				values.push((Math.floor(tdate.getMonth() / 3) + 1));
 			} else if (field == "week") {
 				values.push(this._weekNumber(tdate));
+			} else if (field == "day") {
+				values.push(tdate.getDate());
 			} else {
 				cubesviewer.alert ("Wrong configuration of model: datefilter field '" + field + "' is invalid.");
 			}
@@ -259,7 +276,9 @@ function cubesviewerViewCube () {
 	 */
 	this.buildQueryParams = function(view, includeXAxis, onlyCuts) {
 
-		var params = {};
+		var params = {
+			"lang": view.cubesviewer.options.cubesLang
+		};
 
 		if (!onlyCuts) {
 			var drilldown = view.params.drilldown.slice(0);

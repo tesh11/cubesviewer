@@ -44,6 +44,9 @@ function cubesviewerGui () {
 
 	// View counter (used to assign different ids to each spawned view)
 	this.lastViewId = 0;
+	
+	// Track sorting state
+	this._sorting = false;
 
 	/*
 	 * Closes a view. 
@@ -73,8 +76,8 @@ function cubesviewerGui () {
 			return false;
 		});
 		
-		// Trigger refresh event
-		this.cubesviewer.views.redrawView (view);
+		return view;
+		
 	};
 
 	/*
@@ -95,11 +98,9 @@ function cubesviewerGui () {
 			return false;
 		});
 		
-		// Trigger refresh event
-		this.cubesviewer.views.redrawView (view);
-		
+		return view;
 
-	};	
+	};
 	
 	/*
 	 * Creates a container for a view.
@@ -115,13 +116,19 @@ function cubesviewerGui () {
 			'<div class="cv-gui-cubesview" ><h3 class="sorthandle">' +
 			'<span style="float: right; margin-left: 20px;" class="cv-gui-closeview ui-icon ui-icon-close"></span>' +
 			'<span class="cv-gui-container-name" style="margin-left: 30px; margin-right: 20px;">' + /* view.name + */ '</span> <span style="float: right;" class="cv-gui-container-state"></span>' + /* viewstate + */ 
-			'</h3><div class="cv-gui-viewcontent" style="padding: 1em;"></div></div>'
+			'</h3><div class="cv-gui-viewcontent" style="padding: 1em; overflow: hidden;"></div></div>'
 		);
 		
 		// Configure collapsible
 		$('#' + viewId + " .cv-gui-cubesview").accordion({
 			collapsible : true,
 			autoHeight : false
+		});
+		$('#' + viewId + " .cv-gui-cubesview").on("accordionbeforeactivate", function (evt, ui) {
+			if (cubesviewer.gui._sorting == true) {
+				evt.preventDefault();
+				evt.stopImmediatePropagation();
+			}
 		});
 		
 		return $('#' + viewId);
@@ -153,7 +160,7 @@ function cubesviewerGui () {
 		);
 		
 		// Buttonize
-		$(view.container).find('.cv-view-toolbar').find('button').button();
+		$(view.container).find('.panelbutton').button();
 		
 		
 		var menu = $(".cv-view-menu-panel", $(view.container));
@@ -213,12 +220,14 @@ function cubesviewerGui () {
 		viewobject = $.parseJSON(view.cubesviewer.views.serialize(view));
 		viewobject.name = "Clone of " + viewobject.name;
 
+		var view = this.addViewObject(viewobject);
+
 		// TODO: These belong to plugins 
-		viewobject.savedId = 0;
-		viewobject.owner = this.options.user;
-		viewobject.shared = false;
+		view.savedId = 0;
+		view.owner = this.options.user;
+		view.shared = false;
 		
-		this.addViewObject(viewobject);
+		this.cubesviewer.views.redrawView (view);
 	};
 
 	// Model Loaded Event (redraws cubes list)
@@ -240,22 +249,66 @@ function cubesviewerGui () {
 		
 		// Add handlers for clicks
 		$('.cv-gui-cubeslist', $(cubesviewer.gui.options.container)).find('.cv-gui-addviewcube').click(function() {
-			cubesviewer.gui.addViewCube(  $(this).attr('data-cubename') );
+			var view = cubesviewer.gui.addViewCube(  $(this).attr('data-cubename') );
+			view.cubesviewer.views.redrawView (view);
 			return false;
 		});
 		
+		// Redraw views
+		$(cubesviewer.gui.views).each(function(idx, view) {
+			view.cubesviewer.views.redrawView(view);
+		});		
+		
 	};
 	
-	// Render initial (constant) elements for the GUI
+	/*
+	 * Draw About info box.
+	 */
+	this.showAbout = function() {
+		this.cubesviewer.alert(
+				"CubesViewer - Version " + this.cubesviewer.version + "\n" +
+				"\n" +
+				"Written by José Juan Montes\n" +
+				"2012-2013\n"
+		);
+	};
+	
+	/*
+	 * Draws a section in the main GUI menu.
+	 */
+	this.drawSection = function(gui, title, cssClass) {
+		$(gui.options.container).children('.cv-gui-panel').append(
+			'<div class="cv-gui-panelsection"><h3>' + title + '</h3>' +
+			'<div class="' + cssClass + '"></div></div>'
+        );
+		
+		$("." + cssClass, gui.options.container).prev().click(function() {
+			$("." + cssClass).toggle("slow");
+		});
+	};
+	
+	/*
+	 * Render initial (constant) elements for the GUI
+	 */ 
 	this.onGuiDraw = function(event, gui) {
 		
-		$(gui.options.container).children('.cv-gui-panel').append(
-			'<h3>Cubesviewer</h3>' +
-			'<div class="cv-gui-cubeslist"></div>'
-			//'<h3>Saved Views</h3>' +
-			//'<div class="cv-gui-savedviewlist">' +
-			//'</div>'
-        );
+		// Draw cubes section
+		gui.drawSection (gui, "Cubes", "cv-gui-cubeslist");
+		gui.drawSection (gui, "Tools", "cv-gui-tools");
+		
+		
+		if (! ((gui.options.showAbout != undefined) && (gui.options.showAbout == false))) {
+			$(gui.options.container).find('.cv-gui-tools').append(
+				'<div style="margin-top: 8px;">' +
+				'<a href="#" class="cv-gui-about">About CubesViewer...</a>' +
+				'</div>'
+		    );
+			$('.cv-gui-about', gui.options.container).click(function() {
+				gui.showAbout();
+				return false;
+			});
+		}
+		
 		
 		// Configure sortable panel
 		$(gui.options.container).children('.cv-gui-workspace').sortable({
@@ -266,14 +319,13 @@ function cubesviewerGui () {
 			handle : ".sorthandle",
 
 			start : function(evt, ui) {
-				$(".cubesView", ui.item).accordion("option",
-						"disabled", true);
+				cubesviewer.gui._sorting = true;
 			},
 			stop : function(evt, ui) {
 				setTimeout(function() {
-					$(".cubesView", ui.item).accordion("option",
-							"disabled", false);
-				}, 200)
+					cubesviewer.gui._sorting = false;
+				}, 200);
+				
 			}
 		// forcePlaceholderSize: true,
 		// forceHlperSize: true,

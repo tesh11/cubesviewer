@@ -34,9 +34,23 @@ function cubesviewerViews () {
 	
 	/*
 	 * Adds a new clean view for a cube. 
+	 * This accepts parameters as an object or as a serialized string.
 	 */
-	this.createView = function(id, container, type, params) {
+	this.createView = function(id, container, type, data) {
 
+		var params = {};
+		
+		if (typeof data == "string") {
+			try {
+				params = $.parseJSON(data);
+			} catch (err) {
+				this.cubesviewer.alert ('Error: could not process serialized data (JSON parse error).');
+				params["name"] = "Undefined view";
+			}
+		} else {
+			params = data;
+		}
+		
 		var view = {
 			"id": id,
 			"cubesviewer": this.cubesviewer,
@@ -70,6 +84,38 @@ function cubesviewerViews () {
 	}
 	
 	/*
+	 * Block the view interface.
+	 */
+	this.blockView = function (view, message) {
+		if (message == "undef") message = null;
+		$(view.container).block({ 
+			"message": message, 
+			"fadeOut": 200,
+			"onUnblock": function() { 
+				// Fix conflict with jqBlock which makes menus to not overflow off the view (makes menus innacessible)
+				$(view.container).css("position", "inherit");
+			}
+		});
+	}
+	
+	/*
+	 * Block the view interface with a loading message
+	 */
+	this.blockViewLoading = function (view) {
+		this.blockView (view, '<span class="ajaxloader" title="Loading..." >&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Loading</span>');
+	}
+
+	/*
+	 * Unblock the view interface.
+	 */
+	this.unblockView = function (view) {
+		
+		$(view.container).unblock();
+		
+	}
+
+	
+	/*
 	 * Triggers redraw for a given view.
 	 */
 	this.redrawView = function (view) {
@@ -100,5 +146,4 @@ cubesviewer.views = new cubesviewerViews();
  * Bind events.
  */
 $(document).bind("cubesviewerViewDraw", { }, cubesviewer.views.onViewDraw);
-
 

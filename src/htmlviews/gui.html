@@ -35,6 +35,8 @@
 
 <link type="text/css" rel="stylesheet" href="../web/static/css/cubesviewer/cubesviewer.css" />    
 <link type="text/css" rel="stylesheet" href="../web/static/js/wiky/wiky.math.css" />    
+
+<script type="text/javascript" src="../web/static/js/jquery/jquery.blockUI.js"></script>
     
 <script type="text/javascript" src="../web/static/js/wiky/wiky.js"></script>
 <script type="text/javascript" src="../web/static/js/wiky/wiky.math.js"></script>
@@ -47,7 +49,12 @@
 <script type="text/javascript" src="../web/static/js/cubesviewer/cubesviewer.views.cube.explore.js"></script>
 <script type="text/javascript" src="../web/static/js/cubesviewer/cubesviewer.views.cube.series.js"></script>
 <script type="text/javascript" src="../web/static/js/cubesviewer/cubesviewer.views.cube.chart.js"></script>
+<script type="text/javascript" src="../web/static/js/cubesviewer/cubesviewer.views.cube.columns.js"></script>
+<script type="text/javascript" src="../web/static/js/cubesviewer/cubesviewer.views.cube.export.js"></script>
+<script type="text/javascript" src="../web/static/js/cubesviewer/cubesviewer.views.undo.js"></script>
 <script type="text/javascript" src="../web/static/js/cubesviewer/cubesviewer.gui.js"></script>
+<script type="text/javascript" src="../web/static/js/cubesviewer/cubesviewer.gui.serializing.js"></script>
+<script type="text/javascript" src="../web/static/js/cubesviewer/cubesviewer.gui.localeswitcher.js"></script>
 
 <script type="text/javascript">
 	
@@ -57,15 +64,11 @@
 		var cubesUrl = prompt ("Enter your Cubes Server URL", "http://localhost:5000");
 		
 		cubesviewer.init({
-	        cubesUrl: cubesUrl,
-	        ajaxLoaderUrl: "/static/img/ajax-loader.gif"
+	        cubesUrl: cubesUrl
 	    });
 		
 		cubesviewer.gui.init({
 	        container: $('#cubesviewer').get(0)
-	        
-	        //user: 1,
-	        //backendUrl: "http://localhost:8000/cubesviewer"
 		});
 		
 	    // Start Cubesviewer system
@@ -125,7 +128,7 @@
 	<div style="float: right; white-space: nowrap;">
 		<p style="vertical-align: middle;"> 
 		<a href="http://databrewery.org/" target="_blank"><img title="Powered by Databrewery Cubes" style="width: 30px; height: 30px;" src="../web/static/img/cubes-logo.png" /></a>
-		<img title="Powered by CubesViewer" style="width: 65px; height: 30px;" src="../web/static/img/cubesviewer-logo.png" />
+        <a href="https://github.com/jjmontesl/cubesviewer" target="_blank"><img title="Powered by CubesViewer" style="width: 65px; height: 30px;" src="{{ STATIC_URL }}img/cubesviewer-logo.png" /></a>
 		</p>
 	</div>
 	<div>

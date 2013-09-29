@@ -33,12 +33,13 @@
 function cubesviewer () {
 	
 	// CubesViewer version
-	this.version = "0.3";
+	this.version = "0.6-devel";
 	
 	// Default options
 	this.options = {
 		cubesUrl : null,
-		ajaxLoaderUrl : null
+		cubesLang : null,
+		pagingOptions: [15, 30, 100, 250],
 	};
 
 	// Model data as obtained from Cubes
@@ -67,20 +68,62 @@ function cubesviewer () {
 	}
 
 	/*
+	 * Cubes centralized request 
+	 */
+	this.cubesRequest = function(path, params, successCallback, completeCallback, errorCallback) {
+		
+		var jqxhr = $.get(this.options["cubesUrl"] + path, params, this._cubesRequestCallback(successCallback), "json");
+		
+		if (completeCallback != undefined && completeCallback != null) {
+			jqxhr.always (function() {
+				completeCallback();
+			});
+		}
+
+		if (errorCallback != undefined && errorCallback != null) {
+			jqxhr.fail (function() {
+				errorCallback();
+			});
+		}
+		
+	}
+	
+	this._cubesRequestCallback = function(pCallback) {
+		var callback = pCallback;
+		return function(data, status) {
+			pCallback(data);
+		}
+	}
+	
+	/*
 	 * Load model (cube list, dimensions...)
 	 */ 
 	this.loadModel = function() {
-		$.get(this.options["cubesUrl"] + "/model", null, this._loadModelCallback(), "json");
+		this.cubesRequest ("/model", { "lang": this.options.cubesLang }, this._loadModelCallback())
+		//$.get(this.options["cubesUrl"] + "/model", { "lang": this.options.cubesLang }, this._loadModelCallback());
 	};
 
 	this._loadModelCallback = function() {
 		var cubesviewer = this;
-		return function(data, status) {
+		return function(data) {
 			// Set new model
 			cubesviewer.model = cubesviewer.buildModel(data);
 			$(document).trigger("cubesviewerModelLoaded", [ cubesviewer.model ] )
 		}
 	};		
+	
+	/*
+	 * Change language for Cubes operations 
+	 * (locale must be one of the possible languages for the model).
+	 */
+	this.changeCubesLang = function(lang) {
+		
+		this.options.cubesLang = (lang == "" ? null : lang);
+
+		// Reinitialize system
+		this.refresh();
+		
+	};	
 	
 	/*
 	 * Initialize CubesViewer library.
@@ -95,12 +138,18 @@ function cubesviewer () {
 		});
 
 		// Global AJAX error handler
+		// TODO: This should probably not be a global handler!
 		$(document).ajaxError(
 			function myErrorHandler(event, xhr, ajaxOptions, thrownError) {
-				cubesviewer.alert("An error occurred while accessing the server. Please try again or\n"
-						+ "contact the server administrator if the problem persists.");
-				$('.ajaxloader').hide();
-				$('#refreshButton').button('enable');
+				if (xhr.status == 401) {
+					cubesviewer.alert("Unauthorized.");
+				} else if (xhr.status == 403) {
+					cubesviewer.alert("Forbidden.");
+				} else {
+					cubesviewer.alert("An error occurred while accessing the data server. Please try again or "
+							+ "contact the server administrator if the problem persists.");
+				}
+				//$('.ajaxloader').hide();
 			}
 		);		
 		
