@@ -86,7 +86,7 @@ function cubesviewerViewCubeColumns () {
 		
 		var grid = $('#summaryTable-' + view.id);
 		
-		$(view.container).find(".cv-view-viewfooter").prepend('<div class="cv-view-columns-chooser"><h3>Column chooser</h3><div class="cv-view-columns-chooser-cols"></div></div>');
+		$(view.container).find(".cv-view-viewinfo").append('<div class="cv-view-columns-chooser cv-view-info-panel"><h3>Column chooser</h3><div class="cv-view-columns-chooser-cols"></div></div>');
 		
 		
 		var lastPrefix = "";
@@ -109,7 +109,7 @@ function cubesviewerViewCubeColumns () {
 			
 			var checkedon = (! grid.jqGrid('getGridParam','colModel')[i].hidden) ? 'checked="on"' : '';
 			$(view.container).find(".cv-view-columns-chooser-cols").append (
-					'<span style="margin-right: 15px;"><input type="checkbox" ' + checkedon + ' style="vertical-align: middle;" data-col="' + colname + '" class="cv-view-columns-chooser-col" /> ' + colname.substring(newPrefix.length + 1) + '</span>'
+					'<span style="margin-right: 15px;"><label><input type="checkbox" ' + checkedon + ' style="vertical-align: middle;" data-col="' + colname + '" class="cv-view-columns-chooser-col" /> ' + colname.substring(newPrefix.length + 1) + '</label></span>'
 			);
 			
 			lastPrefix = newPrefix;
@@ -123,7 +123,7 @@ function cubesviewerViewCubeColumns () {
 		
 		
 		$(view.container).find(".cv-view-columns-chooser-cols").append (
-				'<div style="margin-top: 10px; margin-bottom: 20px;">' +
+				'<div style="margin-top: 10px; margin-bottom: 5px;">' +
 				'<button class="cv-views-columns-chooser-close">Close Column Chooser</button>' +
 				'</div>'
 		);
@@ -159,8 +159,12 @@ cubesviewer.views.cube.explore.onTableResize = function (view, width, index) {
 	
 	if (view.params.mode == "explore") {
 		var grid = $('#summaryTable-' + view.id);
-	} else {
+	} else if (view.params.mode == "series") {
 		var grid = $('#seriesTable-' + view.id);
+	} else if (view.paramsWidths.mode == "facts") {
+		var grid = $('#factsTable-' + view.id);
+	} else {
+		return;
 	}
 	
 	for (var i = ((view.params.mode == "explore") ? 1 : 0); i < grid.jqGrid('getGridParam','colNames').length; i++) {
@@ -173,8 +177,6 @@ cubesviewer.views.cube.explore.onTableResize = function (view, width, index) {
 };
 
 cubesviewer.views.cube.explore.onTableSort = function (view, index, iCol, sortorder) {
-	
-	widths = {};
 	
 	// Merge arrays
 	data = {}
@@ -201,12 +203,14 @@ cubesviewer.views.cube.explore.defineColumnSort = function(view, vdefault) {
 
 cubesviewer.views.cube.explore.onTableLoaded = function (view, width, index) {
 	
-	widths = {};
-	
 	if (view.params.mode == "explore") {
 		var grid = $('#summaryTable-' + view.id);
-	} else {
+	} else if (view.params.mode == "series") {
 		var grid = $('#seriesTable-' + view.id);
+	} else if (view.params.mode == "facts") {
+		var grid = $('#factsTable-' + view.id);
+	} else {
+		return;
 	}
 	
 	// Hide columns as needed

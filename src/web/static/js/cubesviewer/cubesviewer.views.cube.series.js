@@ -95,7 +95,7 @@ function cubesviewerViewCubeSeries() {
 		
 		// Add drill menu
 		
-		var drillElements = cubesviewer.views.cube.explore.getDrillElementsList(view, "cv-view-series-setxaxis");
+		var drillElements = cubesviewer.views.cube.explore.getDrillElementsList(view, "cv-view-series-setxaxis", true);
 		
 		/*
 		$(cube.dimensions).each(function(idx, e) {
@@ -126,7 +126,7 @@ function cubesviewerViewCubeSeries() {
 		measuresElements = measuresElements + '<div></div>';
 		$(view.cube.measures).each(function(idx, e) {
 			
-			measuresElements = measuresElements + '<li><a href="#">' + e.name + '</a><ul style="width: 170px; z-index: 9999;">';
+			measuresElements = measuresElements + '<li><a href="#" onclick="return false;">' + e.name + '</a><ul style="width: 170px; z-index: 9999;">';
 			if ("aggregations" in e) {
 				$(e.aggregations).each(function(idx, ea) {
 					measuresElements = measuresElements + '<li><a href="#" class="cv-view-series-setyaxis" data-measure="' + e.name + '_' + ea + '">' + ea + '</a></li>';
@@ -140,11 +140,11 @@ function cubesviewerViewCubeSeries() {
 		
 		
 		menu.append(
-		  '<li class="cv-view-series-horizontal-menu"><a href="#"><span class="ui-icon ui-icon-arrowthick-1-s"></span>Horizontal Dimension</a><ul style="width: 180px;">' +
+		  '<li class="cv-view-series-horizontal-menu"><a href="#" onclick="return false;"><span class="ui-icon ui-icon-arrowthick-1-s"></span>Horizontal Dimension</a><ul style="width: 180px;">' +
 		  		drillElements +
 		  		'<div></div>' +
 		  		'<li><a href="#" class="cv-view-series-setxaxis" data-dimension="">None</a></li>' +
-		  '</ul><li><a href="#"><span class="ui-icon ui-icon-zoomin"></span>Measure</a><ul style="min-width: 180px;">' +
+		  '</ul><li><a href="#" onclick="return false;"><span class="ui-icon ui-icon-zoomin"></span>Measure</a><ul style="min-width: 180px;">' +
 	  	  		measuresElements +
 	  	  '</ul></li>'
 		);
@@ -301,7 +301,7 @@ function cubesviewerViewCubeSeries() {
 	        sortname: cubesviewer.views.cube.explore.defineColumnSort(view, ["key", "desc"])[0], 
 	        viewrecords: true, 
 	        sortorder: cubesviewer.views.cube.explore.defineColumnSort(view, ["key", "desc"])[1], 
-	        footerrow: true,
+	        //footerrow: true,
 	        userDataOnFooter: true,
 	        forceFit: false,
 	        shrinkToFit: false,
@@ -389,7 +389,7 @@ function cubesviewerViewCubeSeries() {
 			if (colNames.indexOf(colKey) < 0) {
 				colNames.push (colKey);
 				colModel.push ({ 
-					name: colKey, index: colKey, align: "right", sorttype: "number", width: cubesviewer.views.cube.explore.defineColumnWidth(view, colKey, 100),
+					name: colKey, index: colKey, align: "right", sorttype: "number", width: cubesviewer.views.cube.explore.defineColumnWidth(view, colKey, 75),
 			        formatter: 'number', 
 			        formatoptions: { decimalSeparator:".", thousandsSeparator: " ", decimalPlaces: 2 }	
 				});
