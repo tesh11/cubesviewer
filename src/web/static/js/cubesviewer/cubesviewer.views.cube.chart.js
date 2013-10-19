@@ -73,7 +73,7 @@ function cubesviewerViewCubeChart() {
 		
 		if (view.cube == null) return;
 		
-		// Series Mode button
+		// Chart Mode button
 		$(view.container).find('.cv-view-toolbar').find(".cv-view-button-series").after(
 			'<button class="cv-view-button-chart" title="Chart" style="margin-right: 15px;"><span class="ui-icon ui-icon-image"></span></button>'
 		);
@@ -100,6 +100,17 @@ function cubesviewerViewCubeChart() {
 		// Explore menu
 		view.cubesviewer.views.cube.chart.drawChartMenu(view);
 
+		// Stop if the chart type is unknown
+		if ((view.params.charttype != "bars-vertical") && 
+		   (view.params.charttype != "bars-vertical-stacked") &&
+		   (view.params.charttype != "lines") &&
+		   (view.params.charttype == "pie") &&
+		   (view.params.charttype == "lines-stacked") && 
+		   (view.params.charttype == "radar")) {
+			return;
+		}
+		
+		
 		// Only if data section is empty
 		if ($(view.container).find('.cv-view-viewdata').children().size() == 0) {
 			$(view.container).find('.cv-view-viewdata').append('<h3>Series Chart</h3>');
@@ -121,15 +132,15 @@ function cubesviewerViewCubeChart() {
 		var cube = view.cube;
 		
 		menu.prepend(
-			'<li><a href="#"><span class="ui-icon ui-icon-calculator"></span>Chart Type</a><ul style="width: 180px;">' +
+			'<li><a href="#"><span class="ui-icon ui-icon-calculator"></span>Chart Type</a><ul style="width: 180px;" class="cv-view-chart-typelist">' +
 	  		'<li><a href="#" class="cv-view-chart-settype" data-charttype="pie">Pie</a></li>' +
 	  		'<li><a href="#" class="cv-view-chart-settype" data-charttype="bars-vertical">Bars Vertical</a></li>' +
 	  		'<li><a href="#" class="cv-view-chart-settype" data-charttype="bars-vertical-stacked">Bars Vertical (Stacked)</a></li>' +
 	  		'<li><a href="#" class="cv-view-chart-settype" data-charttype="lines">Lines</a></li>' +
 	  		'<li><a href="#" class="cv-view-chart-settype" data-charttype="lines-stacked">Areas (Stacked)</a></li>' +
 	  		'<li><a href="#" class="cv-view-chart-settype" data-charttype="radar">Radar</a></li>' +
-	  	  '</ul></li>' +
-  		  '<div></div>'
+	  	    '</ul></li>' +
+  		    '<div></div>'
 	  	);
 	  	menu.append(
 	  	  '<div></div>' +

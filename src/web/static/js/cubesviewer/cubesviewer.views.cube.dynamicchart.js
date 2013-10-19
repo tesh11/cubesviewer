@@ -51,37 +51,22 @@ function cubesviewerViewCubeDynamicChart() {
 		
 		if (view.cube == null) return;
 		
-		// Dynammic Chart Mode button
-		$(view.container).find('.cv-view-toolbar').find(".cv-view-button-chart").css("margin-right", "5px");
-		$(view.container).find('.cv-view-toolbar').find(".cv-view-button-chart").after(
-			'<button class="cv-view-button-dynamicchart" title="Dynamic Chart" style="margin-right: 15px;"><span class="ui-icon ui-icon-calculator"></span></button>'
-		);
 		
-		// Buttonize and event
-		$(view.container).find('.cv-view-button-dynamicchart').button();
-		$(view.container).find('.cv-view-button-dynamicchart').click(function() { 
-			view.cubesviewer.views.cube.dynamicchart.modeDynamicChart(view);
-			return false;
-		});	
-		$(view.container).find('.cv-view-button-dynamicchart').mouseenter(function() {
-			$('.cv-view-menu').hide();
-		});		
+		if (view.params.mode != "chart") return;
 		
-		if (view.params.mode != "dynamicchart") return;
+		// Dynamic chart menu
+		view.cubesviewer.views.cube.dynamicchart.drawChartMenu(view);
 		
-		$(view.container).find('.cv-view-viewdata').append('<h3>Dynamic Chart</h3>');
+		// If enabled:
+		if (view.params.charttype != "dynamicchart") return;
 		
-		// Draw areas
-		view.cubesviewer.views.cube.dynamicchart.drawInfo(view);
+		// Remove horizontal dimension menu 
+		$(".cv-view-series-horizontal-menu", $(view.container)).remove();
 		
 		// Remove horizontal dimension info
 		$(".cv-view-series-horizontal-info", $(view.container)).parents('.infopiece').remove();
-
-		// Highlight
-		$(view.container).find('.cv-view-button-dynamicchart').button("option", "disabled", "true").addClass('ui-state-active');
 		
-		// Explore menu
-		view.cubesviewer.views.cube.dynamicchart.drawChartMenu(view);
+		$(view.container).find('.cv-view-viewdata').append('<h3>Dynamic Chart</h3>');
 		
 		// Load data
 		view.cubesviewer.views.cube.dynamicchart.loadData(view);
@@ -93,15 +78,25 @@ function cubesviewerViewCubeDynamicChart() {
 	 */
 	this.drawChartMenu = function (view) {
 		
-		this.cubesviewer.views.cube.series.drawSeriesMenu(view);
-		
 		var menu = $(".cv-view-menu-view", $(view.container));
 		var cube = view.cube;
 		
-		// Remove horizontal dimension menu
-		$(".cv-view-series-horizontal-menu", $(view.container)).remove();
+		// Add dynamic chart
+		$(view.container).find(".cv-view-chart-typelist").append (
+				'<div></div>' +
+				'<li><a href="#" class="cv-view-chart-settype" data-charttype="dynamicchart">Dynamic Sunburst</a></li>'
+		);
 		
-		menu.append('<div></div>');
+		$(menu).menu("refresh");
+		//$(menu).addClass("ui-menu-icons");
+		
+		// Events
+		$(view.container).find('.cv-view-chart-settype').click( function() {
+			view.cubesviewer.views.cube.chart.selectChartType(view, $(this).attr('data-charttype')); 
+			return false; 
+		});	
+		
+		
 		
 	};
 
@@ -112,14 +107,6 @@ function cubesviewerViewCubeDynamicChart() {
 		view.params.mode = "dynamicchart";
 		view.cubesviewer.views.redrawView(view);
 	};	
-	
-	/*
-	 * Draws information.
-	 * First calls drawInfo in series table in order to draw slice info and container. 
-	 */
-	this.drawInfo = function(view) {
-		view.cubesviewer.views.cube.series.drawInfo(view);
-	};
 	
 	/*
 	 * Load and draw current data
