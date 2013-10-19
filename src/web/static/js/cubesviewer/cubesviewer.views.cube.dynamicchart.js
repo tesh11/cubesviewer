@@ -124,7 +124,7 @@ function cubesviewerViewCubeDynamicChart() {
 		// Build params (do not include xaxis)
 		var params = this.cubesviewer.views.cube.buildQueryParams(view, false, false);
 		
-		$('#' + view.id).find('.cv-view-viewdata').empty().append('<h3>Dynamic Chart</h3><img src="' + view.cubesviewer.options.ajaxLoaderUrl + '" title="Loading..." /> Loading');
+		$('#' + view.id).find('.cv-view-viewdata').empty().append('<h3>Dynamic Chart</h3><span class="ajaxloader" title="Loading...">  Loading</span>');
 		
 		$.get(view.cubesviewer.options.cubesUrl + "/cube/" + view.cube.name + "/aggregate", params, 
 				view.cubesviewer.views.cube.dynamicchart._loadDataCallback(view), "json");
@@ -136,7 +136,6 @@ function cubesviewerViewCubeDynamicChart() {
 		var view = view;
 		
 		return function (data, status) {
-			$(view.container).find('.cv-view-viewdata').empty();
 			view.cubesviewer.views.cube.dynamicchart.drawChart(view, data);
 		};
 		
@@ -159,8 +158,12 @@ function cubesviewerViewCubeDynamicChart() {
 		
 		$(view.container).find('.cv-view-viewdata').css("width", "95%");
 		$(view.container).find('.cv-view-viewdata').append(
-			'<h3>Dynamic Chart</h3>' +
-			'<div id="dynamicChart-' + view.id + '" style="height: 440px; width: 440px; margin: auto; "></div>'
+			'<div><h3>Dynamic Chart</h3>' +
+			'<div id="dynamicChart-' + view.id + '" style="height: 480px; width: 480px; float: left; "></div></div>' +
+			'<div id="dynamicChart-details-' + view.id + '" style="width: 95%; margin-left: 10px;" >' +
+			'<h3>Selected Segment</h3>' +
+			'<h3>Drilldowns</h3>' +
+			'</div>'
 		);
 		
 		// Process and draw cells
@@ -225,13 +228,16 @@ function cubesviewerViewCubeDynamicChart() {
 		
 		var json = json;
 		
-		var width = 420;
+		var width = 470;
 		var height = width;
 		var radius = width / 2;
 		var varx = d3.scale.linear().range([ 0.0 * Math.PI, 2.0 * Math.PI ]);
-		var vary = d3.scale.pow().exponent(1.3).domain([ 0, 1 ]).range([ 0, radius]);
+		//var vary = d3.scale.pow().exponent(1).domain([ 0, 1 ]).range([ 5, radius]);
+		var vary = d3.scale.linear().domain([ 0, 1 ]).range([ 20, radius]);
 		var varp = 5;
 		var duration = 1000;
+		
+		var colorScale = d3.scale.category20().domain([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]);
 		
 		var container = $('#dynamicChart-' + view.id).get(0);
 		
@@ -248,42 +254,21 @@ function cubesviewerViewCubeDynamicChart() {
 	        return false;
 	    }
 
-		function randColor() {
-			var rgb = new Array();
-			for (var i = 0; i < 3; i++) {
-				var color = Math.round(Math.random() * 255);
-				rgb.push(color);
-			}
-			return("rgb(" + rgb.join() + ")");
-		};
-		
 	    function colour(d) {
-	    	
-	    	//return d3.scale.category10();
-	    	
-	    	/*
-	        if ((d.children) && (d.children.length > 0)) {
-	            if (d.children.length > 1) {
-		        	// There is a maximum of two children!
-		            var colours = d.children.map(colour), a = d3.hsl(colours[0]), b = d3
-		                    .hsl(colours[1]);
-		            // L*a*b* might be better here...
-		            return d3.hsl((a.h + b.h) / 2, a.s * 1.2, a.l / 1.2);
-	            } else {
-	            	var colours = d.children.map(colour), a = d3.hsl(colours[0]), b = d3
-                    .hsl(colours[0]);
-	            }
-	        }
-	        */
-	        
-	    	//return d.color || "#fff";
 	    	
 	    	if (d.color != undefined) {
 	    		return d.color;
 	    	} else if ((d.parent != null) && (d.parent.parent != null)) {
 	    		d.color = colour(d.parent);
+	    		var color2 = colorScale(Math.abs(String(d.name).hashCode()) % 20);
+	    		d.color = d3.scale.linear().domain([0,100]).interpolate(d3.interpolateRgb).range([d.color, color2])(30);
 	    	} else {
-	    		d.color = randColor();
+	    		if (! ("name" in d)) {
+	    			d.color = "#ffffff";
+	    		} else {
+	    			d.color = colorScale(Math.abs(String(d.name).hashCode()) % 20);
+	    		}
+    			//console.debug (d.name + "  hash: " + (Math.abs(String(d.name).hashCode()) % 20) + " color: " + d.color);
 	    	}
 	    	return d.color;
 	    	
@@ -294,7 +279,8 @@ function cubesviewerViewCubeDynamicChart() {
 	        var my = maxY(d), 
 	            xd = d3.interpolate(varx.domain(), [ d.x, d.x + d.dx ]), 
 	            yd = d3.interpolate(vary.domain(), [ d.y, my ]), 
-	            yr = d3.interpolate(vary.range(), [ d.y ? 20 : 0, radius]);
+	            //yr = d3.interpolate(vary.range(), [ d.y ? 20 : 0, radius]);
+	            yr = d3.interpolate(vary.range(), [ 20, radius]);
 	        return function(d) {
 	            return function(t) {
 	                varx.domain(xd(t));
@@ -302,6 +288,7 @@ function cubesviewerViewCubeDynamicChart() {
 	                return arc(d);
 	            };
 	        };
+	        
 	    }
 
 	    function maxY(d) {
@@ -375,6 +362,21 @@ function cubesviewerViewCubeDynamicChart() {
                            return brightness(d3.rgb(colour(d))) < 125 ? "#eee"
                                    : "#000";
                        })
+               .style("font-size", 9)
+               .style("-webkit-touch-callout", "none")
+               .style("-webkit-user-select", "none")
+    		   .style("-khtml-user-select", "none")
+			   .style("-moz-user-select", "none")
+			   .style("-ms-user-select", "none")
+			   .style("user-select", "none")
+			   .style("pointer-events", "none")
+               .style(
+	               "visibility",
+	               function(e) {
+	                   var show = ( Math.abs(varx(e.x + e.dx ) - varx(e.x) ) > Math.PI / 48 );
+	                   return show ? null  : "hidden";
+	                   //return isParentOf(d, e) ? null  : d3.select(this).style("visibility");
+	               })
                .attr(
                        "text-anchor",
                        function(d) {
@@ -483,7 +485,7 @@ function cubesviewerViewCubeDynamicChart() {
     	   lastD = d;
     	   
            path.transition().duration(duration).attrTween("d", arcTween(d));
-
+           
            updateText(d);
        }
 		
