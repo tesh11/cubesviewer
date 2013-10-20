@@ -96,9 +96,7 @@ function cubesviewerViewCube () {
 		
 		// Check if the model/cube is loaded.
 		if (view.cube == null) {
-			$(view.container).find('.cv-view-viewdata').empty().append(
-					'<h3>Cube View</h3><div><i>Cannot present cube view: could not load model or cube <b>' + view.params.cubename + '</b>.</i></div>'
-			);
+			cubesviewer.views.showFatal (view.container, 'Cannot present cube view: could not load model or cube <b>' + view.params.cubename + '</b>.');
 			return;
 		}
 		
@@ -300,6 +298,12 @@ function cubesviewerViewCube () {
 				drilldown.splice(0, 0, view.params.xaxis);
 			}
 
+			// Preprocess
+			for (var i = 0; i < drilldown.length; i++) {
+				var parts  = cubesviewer.model.getDimensionParts(drilldown[i]);
+				drilldown[i] = parts.fullDrilldownValue;
+			}
+			
 			// Include drilldown array
 			if (drilldown.length > 0)
 				params["drilldown"] = drilldown;
