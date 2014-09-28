@@ -173,21 +173,22 @@ function cubesviewerViewCubeRangeFilter () {
 		$("[name='range_end']", container).val(rangefilter.range_to);
 
 		// Slider
-		$(".slider-range", container).slider({
-			range: true,
-			min: slider.min ,
-			max: slider.max ,
-			step: slider.step ? slider.step : 1,
-			values: [ rangefilter.range_from ? rangefilter.range_from : slider.min, rangefilter.range_to ? rangefilter.range_to : slider.max ],
-			slide: function( event, ui ) {
-				$("[name='range_start']", container).val(ui.values[ 0 ]);
-				$("[name='range_end']", container).val(ui.values[ 1 ]);
-			},
-			stop: function(event, ui) {
-				view.cubesviewer.views.cube.rangefilter._updateRangeFilter(view, rangefilter);
-			}
-		});
-		
+        if (slider) {
+            $(".slider-range", container).slider({
+                range: true,
+                min: slider.min,
+                max: slider.max,
+                step: slider.step ? slider.step : 1,
+                values: [ rangefilter.range_from ? rangefilter.range_from : slider.min, rangefilter.range_to ? rangefilter.range_to : slider.max ],
+                slide: function (event, ui) {
+                    $("[name='range_start']", container).val(ui.values[ 0 ]);
+                    $("[name='range_end']", container).val(ui.values[ 1 ]);
+                },
+                stop: function (event, ui) {
+                    view.cubesviewer.views.cube.rangefilter._updateRangeFilter(view, rangefilter);
+                }
+            });
+        }
 	};
 	
 	this._updateRangeFilter = function (view, rangefilter) {

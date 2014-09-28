@@ -142,7 +142,6 @@ function cubesviewerViewCubeFacts() {
 	 * Draws facts table.
 	 */
 	this.drawTable = function(view, data) {
-
 		$(view.container).find('.cv-view-viewdata').empty();
 		
 		if (data.length == 0) {
@@ -216,7 +215,6 @@ function cubesviewerViewCubeFacts() {
 
         for (var detailIndex in details){
             var detail = details[detailIndex];
-            console.log("detail",detail);
 			colNames.push(detail.name);
 			colModel.push({
 				name : detail.ref,
@@ -269,6 +267,7 @@ function cubesviewerViewCubeFacts() {
 	    } );
 		
 		this.cubesviewer.views.cube._adjustGridSize();
+
 		
 	};
 
@@ -282,7 +281,7 @@ function cubesviewerViewCubeFacts() {
 		var dimensions = view.cube.dimensions;
 		var measures = view.cube.measures;
         var details = view.cube.details;
-		
+
 		$(data).each( function(idx, e) {
 
 			var nid = [];
@@ -321,7 +320,7 @@ function cubesviewerViewCubeFacts() {
 			rows.push(row);
 		});
 
-		
+
 	};
 	
 };

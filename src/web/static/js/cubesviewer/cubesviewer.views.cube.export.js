@@ -83,7 +83,6 @@ function cubesviewerViewCubeExporter() {
 	 * Download facts in CSV format from Cubes Server
 	 */
 	this.exportFacts = function(view) {
-
 		var params = view.cubesviewer.views.cube.buildQueryParams(view, false, true);
 
 		params["format"] = "csv";

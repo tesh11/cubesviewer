@@ -265,6 +265,45 @@ function cubesviewerViewCube () {
 		return cuts;
 	};
 
+
+
+    /*
+	 * Builds Cubes Server query parameters based on current view values.
+	 */
+	this.buildQueryParams = function(view, includeXAxis, onlyCuts) {
+
+		var params = {
+			"lang": view.cubesviewer.options.cubesLang
+		};
+
+		if (!onlyCuts) {
+			var drilldown = view.params.drilldown.slice(0);
+
+			// Include X Axis if necessary
+			if (includeXAxis) {
+				drilldown.splice(0, 0, view.params.xaxis);
+			}
+
+			// Preprocess
+			for (var i = 0; i < drilldown.length; i++) {
+				var parts  = cubesviewer.model.getDimensionParts(drilldown[i]);
+				drilldown[i] = parts.fullDrilldownValue;
+			}
+
+			// Include drilldown array
+			if (drilldown.length > 0)
+				params["drilldown"] = drilldown;
+		}
+
+		var cuts = cubesviewer.views.cube.buildQueryCuts(view);
+
+		// Join different cut conditions
+		if (cuts.length > 0)
+			params["cut"] = cuts.join("|");
+
+		return params;
+	};
+
 };
 
 /*
