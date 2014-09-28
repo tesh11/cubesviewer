@@ -43,3 +43,10 @@ nosetests.xml
 #/ROADMAP
 
 /virtualenv
+
+*.log
+*.pyc
+local_settings.py
+.idea
+*.DS_Store
+

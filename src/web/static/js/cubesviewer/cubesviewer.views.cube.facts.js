@@ -164,8 +164,8 @@ function cubesviewerViewCubeFacts() {
 		var dataRows = [];
 		var dataTotals = [];
 
-		var dimensions = view.cube.dimensions;
-		var measures = view.cube.measures;
+	    var dimensions = view.cube.dimensions;
+        var measures = view.cube.measures;
         var details = view.cube.details;
 
 		colNames.push("ID");
