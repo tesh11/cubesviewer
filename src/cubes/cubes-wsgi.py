@@ -5,7 +5,7 @@ import os.path
 import ConfigParser
 
 
-_DIR = os.path.dirname(os.path.abspath(__file__))
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_PATH = os.path.join(CURRENT_DIR, "slicer.ini")
 
 try:
