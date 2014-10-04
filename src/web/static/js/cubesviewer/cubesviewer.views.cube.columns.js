@@ -60,28 +60,34 @@ function cubesviewerViewCubeColumns () {
 		var cube = view.cube;
 		
 		// Draw menu options (depending on mode)
-		
-		if ((view.params.mode == "explore")) {
+
+
+        var populateSelectColumnFunction = null;
+		if ((view.params.mode == "explore") || (view.params.mode == "facts")) {
 			menu.append('<div></div>');
 			menu.append('<li><a href="#" class="cv-view-hide-columns"><span class="ui-icon ui-icon-script"></span>Choose columns</a></li>');
-		
-			$(menu).menu( "refresh" );
-			$(menu).addClass("ui-menu-icons");
+            $(menu).menu( "refresh" );
+            $(menu).addClass("ui-menu-icons");
 		} else {
 			$(view.container).find('.cv-view-columns-chooser').remove();
 		}
 
-		
+
+        if ((view.params.mode == "explore")) {
+            populateSelectColumnFunction = view.cubesviewer.views.cube.columns.showHideColumns
+        } else if ((view.params.mode == "facts")) {
+            populateSelectColumnFunction = view.cubesviewer.views.cube.columns.selectFactColumns
+        }
+
 		// Events
 		$(view.container).find('.cv-view-hide-columns').click(function() {
-			view.cubesviewer.views.cube.columns.showHideColumns(view);
+            populateSelectColumnFunction(view);
 			return false;
 		});
 		
 	};
 	
 	this.showHideColumns = function (view) {
-
 		$(view.container).find('.cv-view-columns-chooser').remove();
 		
 		var grid = $('#summaryTable-' + view.id);
@@ -93,7 +99,6 @@ function cubesviewerViewCubeColumns () {
 		var measuresElements = "";
 		var measuresNames = [];
 		$(view.cube.measures).each(function(idx, e) {
-			
 			measuresNames.push(e.name);
 			
 			var aggregates = $.grep(view.cube.aggregates, function(ia) { return ia.measure == e.name; } );
@@ -149,6 +154,68 @@ function cubesviewerViewCubeColumns () {
 		
 	};
 
+
+
+    this.selectFactColumns = function (view) {
+		$(view.container).find('.cv-view-columns-chooser').remove();
+
+		var grid = $('#summaryTable-' + view.id);
+
+		$(view.container).find(".cv-view-viewinfo").append('<div class="cv-view-columns-chooser cv-view-info-panel infopiece ui-widget ui-corner-all" style="background-color: #ddddff;"><h3>Column chooser</h3><div class="cv-view-columns-chooser-cols"></div></div>');
+
+
+		// Add columns
+		var measuresElements = "";
+		var measuresNames = [];
+
+		$(view.cube.measures).each(function(idx, e) {
+            $(view.container).find(".cv-view-columns-chooser-cols").append (
+                '<span style="margin-right: 15px;"><label ><input type="checkbox" checked="on" style="vertical-align: middle;" data-col="' + e.ref + '" class="cv-view-columns-chooser-col" /> ' + e.label + '</label></span>'
+            );
+		});
+
+
+        $(view.cube.dimensions).each(function(idx, e) {
+            for (var i = 0; i < e.levels.length; i++) {
+                var level = e.levels[i];
+                $(view.container).find(".cv-view-columns-chooser-cols").append(
+                    '<span style="margin-right: 15px;"><label ><input type="checkbox" checked="on" style="vertical-align: middle;" data-col="' + level.key().ref + '" class="cv-view-columns-chooser-col" /> ' + level.label + '</label></span>'
+                );
+            }
+		});
+		$(view.cube.details).each(function(idx, e) {
+            $(view.container).find(".cv-view-columns-chooser-cols").append (
+                '<span style="margin-right: 15px;"><label ><input type="checkbox" checked="on" style="vertical-align: middle;" data-col="' + e.ref + '" class="cv-view-columns-chooser-col" /> ' + e.label + '</label></span>'
+            );
+
+		});
+
+		// Event for checkboxes
+		$(view.container).find(".cv-view-columns-chooser-cols").find(".cv-view-columns-chooser-col").click(function () {
+			view.cubesviewer.views.cube.columns.toogleColumn (view, $(this).attr('data-col'));
+		});
+
+
+		$(view.container).find(".cv-view-columns-chooser-cols").append (
+				'<div style="margin-top: 10px;">' +
+				'<button class="cv-views-columns-chooser-close" style="margin-right: 15px;">Close Column Chooser</button>' +
+				'<button class="cv-views-columns-chooser-selectall">Select All</button>' +
+				'<button class="cv-views-columns-chooser-selectnone">Select None</button>' +
+				'</div>'
+		);
+		$(view.container).find(".cv-views-columns-chooser-close").button().click(function() {
+			$(this).parents('.cv-view-columns-chooser').remove();
+		});
+		$(view.container).find(".cv-views-columns-chooser-selectall").button().click(function() {
+			$(view.container).find(".cv-view-columns-chooser-cols").find(":checkbox").not(":checked").trigger('click');;
+		});
+		$(view.container).find(".cv-views-columns-chooser-selectnone").button().click(function() {
+			$(view.container).find(".cv-view-columns-chooser-cols").find(":checkbox").filter(":checked").trigger('click');
+		});
+
+
+	};
+
 	this.isColumnHidden = function (view, col) {
 		var grid = $('#summaryTable-' + view.id);
 		var colmod = $.grep(grid.jqGrid('getGridParam','colModel'), function(co) { return co.name == col })[0];
@@ -156,8 +223,20 @@ function cubesviewerViewCubeColumns () {
 	};
 	
 	this.toogleColumn = function (view, col) {
-		var grid = $('#summaryTable-' + view.id);
-		var colmod = $.grep(grid.jqGrid('getGridParam','colModel'), function(co) { return co.name == col })[0];
+        var tableName = null ;
+        if ((view.params.mode == "explore")) {
+            tableName = 'summaryTable-';
+        } else if ((view.params.mode == "facts")) {
+            tableName = 'factsTable-';
+        }
+		var grid = $('#'+ tableName + view.id);
+		var colmod = $.grep(grid.jqGrid('getGridParam','colModel'), function(co) {
+            if (co.label) {
+                return co.label == col;
+            } else {
+                return co.name == col;
+            }
+        })[0];
 		if (colmod.hidden == true) {
 			grid.jqGrid('showCol', col);
 		} else {
@@ -246,7 +325,6 @@ cubesviewer.views.cube.explore.onTableLoaded = function (view, width, index) {
 			}
 		}
 	}
-	
 };
 
 /*

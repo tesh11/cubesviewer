@@ -49,7 +49,6 @@ function cubesviewerViewCubeExporter() {
 	 * Draw export menu options.
 	 */
 	this.drawMenu = function(view) {
-		
 		if (view.cube == null) return;
 		
 		var menu = $(".cv-view-menu-view", $(view.container));
@@ -60,9 +59,9 @@ function cubesviewerViewCubeExporter() {
 		menu.append('<div></div>');
 		if ((view.params.mode == "explore") || (view.params.mode == "series")) {
 			menu.append('<li><a href="#" class="cv-view-export-table"><span class="ui-icon ui-icon-script"></span>Export table</a></li>');
-		}
-		menu.append('<li><a href="#" class="cv-view-export-facts"><span class="ui-icon ui-icon-script"></span>Export facts</a></li>');
-	  		
+		} else if ((view.params.mode == "facts")) {
+            menu.append('<li><a href="#" class="cv-view-export-facts"><span class="ui-icon ui-icon-script"></span>Export facts</a></li>');
+        }
 		$(menu).menu( "refresh" );
 		$(menu).addClass("ui-menu-icons");
 		
@@ -87,7 +86,44 @@ function cubesviewerViewCubeExporter() {
 
 		params["format"] = "csv";
 
-		var url = view.cubesviewer.options.cubesUrl + "/cube/" + view.cube.name + "/facts?" + $.param(params);
+        var values = [];
+        var grid = $('#factsTable-' + view.id);
+		var columns_to_export_string = '';
+		for (var i = ((view.params.mode == "explore") ? 1 : 0); i < grid.jqGrid('getGridParam','colNames').length; i++) {
+			values.push (grid.jqGrid('getGridParam','colNames')[i]);
+		}
+
+	    var dimensions = view.cube.dimensions;
+        var measures = view.cube.measures;
+        var details = view.cube.details;
+
+        var modelReferenceNames = {};
+        for (var dimensionsIndex in dimensions){
+            var dimension = dimensions[dimensionsIndex];
+            for (var i = 0; i < dimension.levels.length; i++) {
+                var level = dimension.levels[i];
+                modelReferenceNames[level.label] = level.key().ref;
+            }
+        }
+        for (var measureIndex in measures){
+            var measure = measures[measureIndex];
+            modelReferenceNames[measure.ref] = measure.ref;
+        }
+        for (var detailIndex in details){
+            var detail = details[detailIndex];
+            modelReferenceNames[detail.ref] = detail.ref;
+        }
+        for (var valueIndex in values){
+            if (values[valueIndex] !== 'ID'){
+                var value = values[valueIndex];
+                columns_to_export_string += modelReferenceNames[value]+ ',';
+            }
+        };
+
+        // removing last character of a string
+        columns_to_export_string = columns_to_export_string.replace(/,$/, "");
+
+		var url = view.cubesviewer.options.cubesUrl + "/cube/" + view.cube.name + "/facts?" + $.param(params)+'&fields='+columns_to_export_string;
 		window.open(url, '_blank');
 		window.focus();
 
