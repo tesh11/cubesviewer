@@ -227,6 +227,14 @@ div.cv-view-dimensionfilter-item {
     margin-right: 5px;
 }
 
+span.cv-view-columnchooser-item {
+    white-space: nowrap;
+    display: inline-block;
+    width: 46%;
+    overflow: hidden;
+    margin-right: 5px;
+}
+
 .nvtooltip table {
 	margin: 0px ;
 }

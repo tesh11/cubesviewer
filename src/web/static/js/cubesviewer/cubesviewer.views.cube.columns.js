@@ -161,34 +161,47 @@ function cubesviewerViewCubeColumns () {
 
 		var grid = $('#summaryTable-' + view.id);
 
-		$(view.container).find(".cv-view-viewinfo").append('<div class="cv-view-columns-chooser cv-view-info-panel infopiece ui-widget ui-corner-all" style="background-color: #ddddff;"><h3>Column chooser</h3><div class="cv-view-columns-chooser-cols"></div></div>');
+		$(view.container).find(".cv-view-viewinfo").append(
+            '<div class="cv-view-columns-chooser cv-view-info-panel infopiece ui-widget ui-corner-all" style="background-color: #ddddff;">' +
+                '<h3>Column chooser</h3>' +
+                '<div class="cv-view-columns-chooser-cols" style="max-height: 300px; overflow-x: hidden; overflow-y: auto; max-width: 580px; "></div>' +
+                '<div class="cv-view-columns-chooser-buttons"></div>' +
+            '</div>');
+
+        var elementList = [];
 
 
-		// Add columns
-		var measuresElements = "";
-		var measuresNames = [];
+        var measures = view.cube.measures;
+        for (var i=0; i < measures.length; i++){
+            var measure = measures[i];
+            var key = measure.ref;
+            var value = measure.label;
+            elementList.push([key, value]);
+        }
 
-		$(view.cube.measures).each(function(idx, e) {
-            $(view.container).find(".cv-view-columns-chooser-cols").append (
-                '<span style="margin-right: 15px;"><label ><input type="checkbox" checked="on" style="vertical-align: middle;" data-col="' + e.ref + '" class="cv-view-columns-chooser-col" /> ' + e.label + '</label></span>'
-            );
-		});
-
-
-        $(view.cube.dimensions).each(function(idx, e) {
-            for (var i = 0; i < e.levels.length; i++) {
-                var level = e.levels[i];
-                $(view.container).find(".cv-view-columns-chooser-cols").append(
-                    '<span style="margin-right: 15px;"><label ><input type="checkbox" checked="on" style="vertical-align: middle;" data-col="' + level.key().ref + '" class="cv-view-columns-chooser-col" /> ' + level.label + '</label></span>'
-                );
+        var dimensions = view.cube.dimensions;
+        for (var i=0; i < dimensions.length; i++){
+            var dimension = dimensions[i];
+            for (var j = 0; j < dimension.levels.length; j++) {
+                var level = dimension.levels[j];
+                elementList.push([level.key().ref , level.label]);
             }
-		});
-		$(view.cube.details).each(function(idx, e) {
-            $(view.container).find(".cv-view-columns-chooser-cols").append (
-                '<span style="margin-right: 15px;"><label ><input type="checkbox" checked="on" style="vertical-align: middle;" data-col="' + e.ref + '" class="cv-view-columns-chooser-col" /> ' + e.label + '</label></span>'
-            );
+        }
 
-		});
+        var details = view.cube.details;
+        for (var i=0; i < details.length; i++){
+            var detail = details[i];
+            var key = detail.ref;
+            var value = detail.label;
+            elementList.push([key, value]);
+        }
+
+        var columnElement = $(view.container).find(".cv-view-columns-chooser-cols");
+        for (var i=0; i<elementList.length; i++){
+            columnElement.append (
+                '<span class="cv-view-columnchooser-item"><label ><input type="checkbox" checked="on" style="vertical-align: middle;" data-col="' + elementList[i][0] + '" class="cv-view-columns-chooser-col" /> ' + elementList[i][1] + '</label></span>'
+            );
+        }
 
 		// Event for checkboxes
 		$(view.container).find(".cv-view-columns-chooser-cols").find(".cv-view-columns-chooser-col").click(function () {
@@ -196,7 +209,7 @@ function cubesviewerViewCubeColumns () {
 		});
 
 
-		$(view.container).find(".cv-view-columns-chooser-cols").append (
+		$(view.container).find(".cv-view-columns-chooser-buttons").append (
 				'<div style="margin-top: 10px;">' +
 				'<button class="cv-views-columns-chooser-close" style="margin-right: 15px;">Close Column Chooser</button>' +
 				'<button class="cv-views-columns-chooser-selectall">Select All</button>' +
