@@ -88,40 +88,16 @@ function cubesviewerViewCubeExporter() {
 
         var values = [];
         var grid = $('#factsTable-' + view.id);
-		var columns_to_export_string = '';
-		for (var i = ((view.params.mode == "explore") ? 1 : 0); i < grid.jqGrid('getGridParam','colNames').length; i++) {
-			values.push (grid.jqGrid('getGridParam','colNames')[i]);
+
+        var colModels = grid.jqGrid('getGridParam','colModel');
+        for (var i = ((view.params.mode == "facts") ? 1 : 0); i < colModels.length; i++) {
+            if (!colModels[i].hidden) {
+                var name = colModels[i].name;
+                values.push(name);
+            }
 		}
 
-	    var dimensions = view.cube.dimensions;
-        var measures = view.cube.measures;
-        var details = view.cube.details;
-
-        var modelReferenceNames = {};
-        for (var dimensionsIndex in dimensions){
-            var dimension = dimensions[dimensionsIndex];
-            for (var i = 0; i < dimension.levels.length; i++) {
-                var level = dimension.levels[i];
-                modelReferenceNames[level.label] = level.key().ref;
-            }
-        }
-        for (var measureIndex in measures){
-            var measure = measures[measureIndex];
-            modelReferenceNames[measure.ref] = measure.ref;
-        }
-        for (var detailIndex in details){
-            var detail = details[detailIndex];
-            modelReferenceNames[detail.ref] = detail.ref;
-        }
-        for (var valueIndex in values){
-            if (values[valueIndex] !== 'ID'){
-                var value = values[valueIndex];
-                columns_to_export_string += modelReferenceNames[value]+ ',';
-            }
-        };
-
-        // removing last character of a string
-        columns_to_export_string = columns_to_export_string.replace(/,$/, "");
+        var columns_to_export_string = values.join(',');
 
 		var url = view.cubesviewer.options.cubesUrl + "/cube/" + view.cube.name + "/facts?" + $.param(params)+'&fields='+columns_to_export_string;
 		window.open(url, '_blank');
